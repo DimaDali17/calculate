@@ -94,6 +94,7 @@ table{width:100%;border-collapse:collapse}
   <div><div class="bname">Калькулятор маржи</div><div class="bsub">Wildberries · FBW / FBS</div></div>
   <div class="tabs" id="tabs">
     <button class="tab on" data-p="calc" onclick="tab('calc')">Калькулятор</button>
+    <button class="tab" data-p="reg" onclick="tab('reg')">Реестр</button>
     <button class="tab" data-p="const" onclick="tab('const')">Константы</button>
     <button class="tab" data-p="ref" onclick="tab('ref')">Справочник</button>
   </div>
@@ -129,7 +130,7 @@ table{width:100%;border-collapse:collapse}
             <div class="f"><label>Схема</label>
               <div class="seg" id="seg_scheme"><button class="on" onclick="setScheme('FBW')">FBW</button><button onclick="setScheme('FBS')">FBS</button></div>
             </div>
-            <div class="f"><label>Сдача</label>
+            <div class="f" id="handWrap"><label>Сдача (только FBS)</label>
               <div class="seg" id="seg_hand"><button class="on" onclick="setHand('СЦ')">в СЦ</button><button onclick="setHand('ПВЗ')">в ПВЗ</button></div>
             </div>
             <div class="f" id="fbsTimeWrap" style="display:none"><label>Время сдачи (FBS)</label>
@@ -179,6 +180,11 @@ table{width:100%;border-collapse:collapse}
         <div class="card">
           <div class="ct">Экономика по шагам <span id="brkMode" style="font-size:9px;color:var(--ink3)"></span></div>
           <table class="brk"><tbody id="brk"></tbody></table>
+          <div class="sub" style="margin-top:6px">Наведи курсор на строку — покажет формулу.</div>
+        </div>
+        <div class="card">
+          <div class="ct">Сравнение FBW / FBS</div>
+          <div id="cmp"></div>
         </div>
       </div>
     </div>
@@ -187,6 +193,15 @@ table{width:100%;border-collapse:collapse}
       <div class="status" id="saveStatus"></div>
       <button class="b" onclick="reload()">Сбросить к сохранённому</button>
       <button class="b gr" onclick="saveState()">💾 Рассчитать и сохранить</button>
+    </div>
+  </div>
+
+  <!-- ═══════ РЕЕСТР ═══════ -->
+  <div id="page-reg" style="display:none">
+    <div class="card">
+      <div class="ct">Реестр расчётов <input class="srch" id="regSrch" placeholder="поиск по артикулу / предмету…" oninput="renderReg()"></div>
+      <div class="sub">Сохранённые расчёты (кнопка «💾 Рассчитать и сохранить»). Клик по строке — загрузить в калькулятор. Один артикул на ИП обновляется, а не дублируется.</div>
+      <table class="ktbl"><thead><tr><th>ИП</th><th>Артикул</th><th>Предмет</th><th>Схема</th><th>Маржа</th><th>Прибыль</th><th>Сохранено</th><th></th></tr></thead><tbody id="regBody"></tbody></table>
     </div>
   </div>
 
@@ -237,7 +252,7 @@ table{width:100%;border-collapse:collapse}
     <div class="fld"><label>Воркер URL (сохранение + прокси CSV)</label><input id="set_url" placeholder="https://calc.твой-домен.workers.dev"></div>
     <div class="fld"><label>Ключ доступа</label><input id="set_key" placeholder="общий пароль команды (как в Apps Script)"></div>
     <div id="ipEditor"></div>
-    <div class="rr"><button class="b" onclick="closeSettings()">Отмена</button><button class="b pri" onclick="saveSettings()">Сохранить и загрузить</button></div>
+    <div class="rr"><button class="b" onclick="testConn()">Проверить связь</button><button class="b" onclick="closeSettings()">Отмена</button><button class="b pri" onclick="saveSettings()">Сохранить и загрузить</button></div>
   </div>
 </div>
 
@@ -259,7 +274,7 @@ const DEFAULT_IPS=[
 
 const DEFAULT_CONST={
   log_l1:32, log_l2:28, log_l3:14, log_coef:1.70,
-  prep_fbw_sc:0, prep_fbw_pvz:5, prep_fbs_sc:0, prep_fbs_pvz:10,
+  prep_fbw:0, prep_fbs_sc:0, prep_fbs_pvz:10,
   move:0, store_per_l:0.14, store_days:0,
   acquiring:2.5, wallet:3,
   comm_def_fbw:40, comm_def_fbs:44,
@@ -280,7 +295,7 @@ const DEMO_ARTS=[{art:'Pantal.SK.bejnew.02',pred:'Трусы',vol:0.47,cogs:214}
 /* ═══════ STATE ═══════ */
 let CFG={url:'',key:'',ips:DEFAULT_IPS.map(x=>({...x}))};
 let C={...DEFAULT_CONST}, COMM=DEFAULT_COMM.map(x=>({...x}));
-let ARTS=[], S={...DEFAULT_STATE}, ONLINE=false, curTab='calc';
+let ARTS=[], S={...DEFAULT_STATE}, REG=[], ONLINE=false, curTab='calc';
 
 /* ═══════ УТИЛИТЫ ═══════ */
 const $=id=>document.getElementById(id);
@@ -354,33 +369,33 @@ async function loadIp(ip){
 function currentIp(){return CFG.ips.find(x=>x.name===S.ip)||CFG.ips[0];}
 
 /* ═══════ РАСЧЁТ ═══════ */
-function buyoutCalc(){
+function buyoutCalc(st){
   const P0=C.by_P0,B0=C.by_B0/100,e=C.by_e,Bmin=B0-C.by_dmin/100,Bmax=B0+C.by_dmax/100;
-  const priceSPP=S.price*(1-S.disc/100)*(1-S.spp/100);
+  const priceSPP=st.price*(1-st.disc/100)*(1-st.spp/100);
   return Math.max(Bmin,Math.min(Bmax,B0*Math.pow(priceSPP/P0,e)));
 }
-function effBuyout(){const c=buyoutCalc(),m=S.buyM/100;return C.by_mode==='calc'?c:C.by_mode==='manual'?m:(c+m)/2;}
+function effBuyout(st){const c=buyoutCalc(st),m=st.buyM/100;return C.by_mode==='calc'?c:C.by_mode==='manual'?m:(c+m)/2;}
 function logisticsForward(vol){return (C.log_l1+C.log_l2*Math.max(0,Math.min(vol-1,1))+C.log_l3*Math.max(0,vol-2))*C.log_coef;}
-function prepCost(){return S.scheme==='FBW'?(S.hand==='ПВЗ'?C.prep_fbw_pvz:C.prep_fbw_sc):(S.hand==='ПВЗ'?C.prep_fbs_pvz:C.prep_fbs_sc);}
-function commPct(){
-  const rec=COMM.find(c=>norm(c.pred)===norm(S.pred));
-  let base=rec?(S.scheme==='FBW'?rec.fbw:rec.fbs):(S.scheme==='FBW'?C.comm_def_fbw:C.comm_def_fbs);
-  if(S.scheme==='FBS'){ if(S.fbsTime==='t13')base-=C.fbs_t13; else if(S.fbsTime==='t42')base-=C.fbs_t42; }
+function prepCost(st){ if(st.scheme==='FBW')return C.prep_fbw; return st.hand==='ПВЗ'?C.prep_fbs_pvz:C.prep_fbs_sc; }
+function commPct(st){
+  const rec=COMM.find(c=>norm(c.pred)===norm(st.pred));
+  let base=rec?(st.scheme==='FBW'?rec.fbw:rec.fbs):(st.scheme==='FBW'?C.comm_def_fbw:C.comm_def_fbs);
+  if(st.scheme==='FBS'){ if(st.fbsTime==='t13')base-=C.fbs_t13; else if(st.fbsTime==='t42')base-=C.fbs_t42; }
   return Math.max(0,base);
 }
-function commKnown(){return !!COMM.find(c=>norm(c.pred)===norm(S.pred));}
-function compute(){
-  const b=effBuyout();
-  const priceDisc=S.price*(1-S.disc/100), priceSPP=priceDisc*(1-S.spp/100);
+function commKnown(st){return !!COMM.find(c=>norm(c.pred)===norm(st.pred));}
+function compute(st){
+  const b=effBuyout(st);
+  const priceDisc=st.price*(1-st.disc/100), priceSPP=priceDisc*(1-st.spp/100);
   const wallet=priceSPP*(C.wallet/100), priceSite=priceSPP-wallet;
   const acquiring=priceDisc*(C.acquiring/100);
-  const comm=commPct()/100, commRub=priceDisc*comm, toTransfer=priceDisc-commRub-acquiring;
-  const logFwd=logisticsForward(S.vol), logWithBuyout=b>0?(logFwd+(1-b)*logFwd)/b:logFwd;
-  const prep=prepCost(), move=C.move, store=C.store_per_l*S.vol*C.store_days;
+  const comm=commPct(st)/100, commRub=priceDisc*comm, toTransfer=priceDisc-commRub-acquiring;
+  const logFwd=logisticsForward(st.vol), logWithBuyout=b>0?(logFwd+(1-b)*logFwd)/b:logFwd;
+  const prep=prepCost(st), move=C.move, store=C.store_per_l*st.vol*C.store_days;
   const tax=priceDisc*(C.tax/100), vat=priceDisc*(C.vat/100);
-  const profit0=toTransfer-S.cogs-C.outsource-C.fixed-logWithBuyout-prep-move-store-tax-vat;
-  const clicks=1000*(S.ctr/100), cpc=clicks>0?S.bid/clicks:0;
-  const orders=Math.ceil(clicks*(S.cr/100)), cpo=orders>0?S.bid/orders:0;
+  const profit0=toTransfer-st.cogs-C.outsource-C.fixed-logWithBuyout-prep-move-store-tax-vat;
+  const clicks=1000*(st.ctr/100), cpc=clicks>0?st.bid/clicks:0;
+  const orders=Math.ceil(clicks*(st.cr/100)), cpo=orders>0?st.bid/orders:0;
   const cps=b>0?cpo/b:cpo, drr=priceSPP>0?cps/priceSPP:0;
   const profit=profit0-cps, marzha=priceSite>0?profit/priceSite:0;
   return {b,priceDisc,priceSPP,wallet,priceSite,acquiring,comm,commRub,toTransfer,logFwd,logWithBuyout,prep,move,store,tax,vat,profit0,cpc,orders,cpo,cps,drr,profit,marzha};
@@ -389,7 +404,7 @@ function fmt(n){return (Math.round(n*100)/100).toLocaleString('ru-RU');}
 function neg(v){return '<span class="neg">−'+money(Math.abs(v))+'</span>';}
 function calc(){
   readInputs();
-  const r=compute();
+  const r=compute(S);
   $('m_marzha').textContent=pct(r.marzha*100);
   $('m_marzha').style.color=r.marzha>=0.2?'#8FE3B0':(r.marzha>=0?'#F0C98A':'#F0A0A0');
   $('m_marzha_d').innerHTML='прибыль <b>'+money(r.profit)+'</b> с цены на сайте <b>'+money(r.priceSite)+'</b>';
@@ -399,29 +414,65 @@ function calc(){
   $('m_log').textContent=money1(r.logWithBuyout);
   $('m_log_d').innerHTML='без возврата <b>'+money1(r.logFwd)+'</b>';
   $('m_site').textContent=money(r.priceSite);
-  $('buyoutNote').innerHTML=`Выкуп: <b>${pct(r.b*100)}</b> (эласт. ${pct(buyoutCalc()*100)} · ручной ${pct(S.buyM)}). Комиссия ВБ: <b>${pct(commPct())}</b>`
-    +(commKnown()?'':' <span style="color:var(--amber)">(предмет не в таблице — дефолт)</span>')+`. Налог ${S.ip}: <b>${fmt(C.tax)}%</b>${C.vat?' + НДС '+fmt(C.vat)+'%':''}.`;
+  $('buyoutNote').innerHTML=`Выкуп: <b>${pct(r.b*100)}</b> (эласт. ${pct(buyoutCalc(S)*100)} · ручной ${pct(S.buyM)}). Комиссия ВБ: <b>${pct(commPct(S))}</b>`
+    +(commKnown(S)?'':' <span style="color:var(--amber)">(предмет не в таблице — дефолт)</span>')+`. Налог ${S.ip}: <b>${fmt(C.tax)}%</b>${C.vat?' + НДС '+fmt(C.vat)+'%':''}.`;
+  const b=r.b;
   const rows=[
-    ['h','Выручка',''],
-    ['','Цена продавца',money(S.price)],['','− скидка '+fmt(S.disc)+'%',neg(S.price*S.disc/100)],
-    ['','Цена со скидкой',money(r.priceDisc)],['','− СПП '+fmt(S.spp)+'%',neg(r.priceDisc*S.spp/100)],
-    ['','Цена с СПП',money(r.priceSPP)],['','− WB-кошелёк '+fmt(C.wallet)+'%',neg(r.wallet)],
-    ['tot','Цена на сайте',money(r.priceSite)],
-    ['h','Удержания ВБ',''],
-    ['','Комиссия ВБ '+fmt(commPct())+'%',neg(r.commRub)],['','Эквайринг '+fmt(C.acquiring)+'%',neg(r.acquiring)],
-    ['tot','Цена к перечислению',money(r.toTransfer)],
-    ['h','Расходы',''],
-    ['','Себестоимость (Расход-ШТ)',neg(S.cogs)],['','Логистика с выкупом',neg(r.logWithBuyout)],
-    ['','Приёмка / подготовка',neg(r.prep)],['','Перемещение',neg(r.move)],['','Хранение ('+fmt(C.store_days)+' дн.)',neg(r.store)],
-    ['','Аутсорсинг',neg(C.outsource)],['','Постоянные',neg(C.fixed)],
-    ['','Налог '+fmt(C.tax)+'%',neg(r.tax)],['','НДС '+fmt(C.vat)+'%',neg(r.vat)],
-    ['tot','Прибыль до рекламы',money(r.profit0)],
-    ['h','Реклама',''],
-    ['','Заказов с 1000 показов',fmt(r.orders)+' шт'],['','CPO',money1(r.cpo)],['','Реклама на выкуп (CPS)',neg(r.cps)],['','ДРР',pct(r.drr*100)],
-    ['tot g','Прибыль с продажи',money(r.profit)],['tot','Маржинальность',pct(r.marzha*100)]
+    ['h','Выручка','',''],
+    ['','Цена продавца',money(S.price),'Исходная цена до скидок — вводится вручную.'],
+    ['','− скидка '+fmt(S.disc)+'%',neg(S.price*S.disc/100),'Цена продавца × '+fmt(S.disc)+'%.'],
+    ['','Цена со скидкой',money(r.priceDisc),'Цена продавца × (1 − скидка). База для комиссии и налогов.'],
+    ['','− СПП '+fmt(S.spp)+'%',neg(r.priceDisc*S.spp/100),'Скидка постоянного покупателя от ВБ: Цена со скидкой × '+fmt(S.spp)+'%.'],
+    ['','Цена с СПП',money(r.priceSPP),'Цена со скидкой × (1 − СПП). База для ДРР.'],
+    ['','− WB-кошелёк '+fmt(C.wallet)+'%',neg(r.wallet),'Цена с СПП × '+fmt(C.wallet)+'%.'],
+    ['tot','Цена на сайте',money(r.priceSite),'Цена с СПП − WB-кошелёк. То, что видит покупатель.'],
+    ['h','Удержания ВБ','',''],
+    ['','Комиссия ВБ '+fmt(commPct(S))+'%',neg(r.commRub),'Цена со скидкой × комиссия предмета'+(S.scheme==='FBS'?' (минус бонус за время сдачи).':'.')],
+    ['','Эквайринг '+fmt(C.acquiring)+'%',neg(r.acquiring),'Цена со скидкой × '+fmt(C.acquiring)+'%.'],
+    ['tot','Цена к перечислению',money(r.toTransfer),'Цена со скидкой − комиссия − эквайринг.'],
+    ['h','Расходы','',''],
+    ['','Себестоимость (Расход-ШТ)',neg(S.cogs),'Из листа «Экон», колонка Расход-ШТ по этому артикулу.'],
+    ['','Логистика с выкупом',neg(r.logWithBuyout),'(Логистика + (1−выкуп)×возврат) ÷ выкуп. Логистика вперёд = '+money1(r.logFwd)+', выкуп '+pct(b*100)+'.'],
+    ['','Приёмка / подготовка',neg(r.prep),S.scheme==='FBW'?'Подготовка FBW (константа).':'Приёмка FBS для сдачи в '+S.hand+' (константа).'],
+    ['','Перемещение',neg(r.move),'Перемещение до места хранения (константа, 0 до 29.09).'],
+    ['','Хранение ('+fmt(C.store_days)+' дн.)',neg(r.store),fmt(C.store_per_l)+' ₽/л × '+fmt(S.vol)+' л × '+fmt(C.store_days)+' дн.'],
+    ['','Аутсорсинг',neg(C.outsource),'Фикс на единицу (константа).'],
+    ['','Постоянные',neg(C.fixed),'Прочие постоянные на единицу (константа).'],
+    ['','Налог '+fmt(C.tax)+'%',neg(r.tax),'Цена со скидкой × '+fmt(C.tax)+'% (налог '+S.ip+').'],
+    ['','НДС '+fmt(C.vat)+'%',neg(r.vat),'Цена со скидкой × '+fmt(C.vat)+'%.'],
+    ['tot','Прибыль до рекламы',money(r.profit0),'Цена к перечислению минус все расходы выше.'],
+    ['h','Реклама','',''],
+    ['','Заказов с 1000 показов',fmt(r.orders)+' шт','1000 × CTR × CR, округление вверх. CTR '+fmt(S.ctr)+'%, CR '+fmt(S.cr)+'%.'],
+    ['','CPO',money1(r.cpo),'Ставка за 1000 показов ÷ число заказов.'],
+    ['','Реклама на выкуп (CPS)',neg(r.cps),'CPO ÷ выкуп ('+pct(b*100)+') — реклама в пересчёте на выкупленный заказ.'],
+    ['','ДРР',pct(r.drr*100),'CPS ÷ Цена с СПП.'],
+    ['tot g','Прибыль с продажи',money(r.profit),'Прибыль до рекламы − CPS.'],
+    ['tot','Маржинальность',pct(r.marzha*100),'Прибыль с продажи ÷ Цена на сайте.']
   ];
-  $('brk').innerHTML=rows.map(([cls,l,v])=>`<tr class="${cls}"><td>${l}</td><td>${v}</td></tr>`).join('');
-  $('brkMode').textContent=S.ip+' · '+S.scheme+' · сдача в '+S.hand;
+  $('brk').innerHTML=rows.map(([cls,l,v,tip])=>`<tr class="${cls}"${tip?' title="'+tip.replace(/"/g,'&quot;')+'"':''}><td>${l}</td><td>${v}</td></tr>`).join('');
+  $('brkMode').textContent=S.ip+' · '+S.scheme+(S.scheme==='FBS'?' · сдача в '+S.hand:'');
+  renderCmp();
+}
+function renderCmp(){
+  const f=compute({...S,scheme:'FBW'}), s=compute({...S,scheme:'FBS'});
+  const better=(a,bv,hi)=>hi?(a>bv?0:1):(a<bv?0:1);   // индекс лучшего
+  const gr='color:var(--green);font-weight:700', dim='color:var(--ink3)';
+  const line=(label,fv,sv,fRaw,sRaw,hi)=>{
+    const win=better(fRaw,sRaw,hi);
+    return `<tr><td>${label}</td>
+      <td style="${win===0?gr:''}">${fv}</td>
+      <td style="${win===1?gr:''}">${sv}</td></tr>`;
+  };
+  $('cmp').innerHTML=`<table class="ktbl"><thead><tr><th>Показатель</th><th>FBW</th><th>FBS${S.scheme==='FBS'?' · '+S.hand:''}</th></tr></thead><tbody>
+    ${line('Комиссия ВБ, %',fmt(commPct({...S,scheme:'FBW'}))+'%',fmt(commPct({...S,scheme:'FBS'}))+'%',commPct({...S,scheme:'FBW'}),commPct({...S,scheme:'FBS'}),false)}
+    ${line('Комиссия, ₽',money(f.commRub),money(s.commRub),f.commRub,s.commRub,false)}
+    ${line('Логистика с выкупом',money1(f.logWithBuyout),money1(s.logWithBuyout),f.logWithBuyout,s.logWithBuyout,false)}
+    ${line('Приёмка / подготовка',money(f.prep),money(s.prep),f.prep,s.prep,false)}
+    ${line('Прибыль до рекламы',money(f.profit0),money(s.profit0),f.profit0,s.profit0,true)}
+    ${line('Прибыль с продажи',money(f.profit),money(s.profit),f.profit,s.profit,true)}
+    ${line('Маржинальность',pct(f.marzha*100),pct(s.marzha*100),f.marzha,s.marzha,true)}
+  </tbody></table>
+  <div class="sub" style="margin-top:8px">Зелёным — что выгоднее по строке. FBS считается для текущего времени сдачи «${({t13:'до 13ч',t42:'13–42ч',none:'после 42ч'})[S.fbsTime]}».</div>`;
 }
 
 /* ═══════ ПОЛЯ ═══════ */
@@ -439,6 +490,7 @@ function writeInputs(){
   fillArtList();fillPredList();fillIpSelect();
   segSet('seg_scheme',S.scheme==='FBW'?0:1);segSet('seg_hand',S.hand==='СЦ'?0:1);
   $('fbsTimeWrap').style.display=S.scheme==='FBS'?'':'none';
+  $('handWrap').style.display=S.scheme==='FBS'?'':'none';
 }
 function fillIpSelect(){
   const sel=$('i_ip');sel.innerHTML=CFG.ips.map(p=>`<option value="${p.name}">${p.name}</option>`).join('');
@@ -457,7 +509,7 @@ function pickArt(){
   if(a){S.art=a.art; if(a.vol)$('i_vol').value=a.vol; $('i_cogs').value=a.cogs||0; if(a.pred)$('i_pred').value=a.pred;}
   calc();
 }
-function setScheme(v){S.scheme=v;segSet('seg_scheme',v==='FBW'?0:1);$('fbsTimeWrap').style.display=v==='FBS'?'':'none';calc();}
+function setScheme(v){S.scheme=v;segSet('seg_scheme',v==='FBW'?0:1);$('fbsTimeWrap').style.display=v==='FBS'?'':'none';$('handWrap').style.display=v==='FBS'?'':'none';calc();}
 function setHand(v){S.hand=v;segSet('seg_hand',v==='СЦ'?0:1);calc();}
 function segSet(id,i){$(id).querySelectorAll('button').forEach((b,j)=>b.classList.toggle('on',j===i));}
 async function switchIp(){
@@ -474,7 +526,7 @@ async function switchIp(){
 /* ═══════ КОНСТАНТЫ UI ═══════ */
 const CDEF={
   cLog:[['log_l1','1-й литр, ₽'],['log_l2','2-й литр, ₽'],['log_l3','3-й и далее литр, ₽'],['log_coef','Коэф. склада (×)']],
-  cAcc:[['prep_fbw_sc','Подготовка FBW · СЦ, ₽'],['prep_fbw_pvz','Подготовка FBW · ПВЗ, ₽'],['prep_fbs_sc','Приёмка FBS · СЦ, ₽'],['prep_fbs_pvz','Приёмка FBS · ПВЗ, ₽'],['move','Перемещение, ₽/ед'],['store_per_l','Хранение, ₽/литр/день'],['store_days','Дней хранения']],
+  cAcc:[['prep_fbw','Подготовка FBW, ₽'],['prep_fbs_sc','Приёмка FBS · СЦ, ₽'],['prep_fbs_pvz','Приёмка FBS · ПВЗ, ₽'],['move','Перемещение, ₽/ед'],['store_per_l','Хранение, ₽/литр/день'],['store_days','Дней хранения']],
   cFin:[['acquiring','Эквайринг, %'],['wallet','WB-кошелёк, %'],['comm_def_fbw','Комиссия по умолч. FBW, %'],['comm_def_fbs','Комиссия по умолч. FBS, %'],['fbs_t13','FBS бонус до 13ч, п.%'],['fbs_t42','FBS бонус 13–42ч, п.%']],
   cFix:[['outsource','Аутсорсинг, ₽/ед'],['fixed','Постоянные, ₽/ед'],['by_P0','Выкуп · P0 (база цены), ₽'],['by_B0','Выкуп · B0 базовый, %'],['by_e','Выкуп · эластичность e'],['by_dmin','Выкуп · Δ min, %'],['by_dmax','Выкуп · Δ max, %']]
 };
@@ -507,12 +559,67 @@ function renderRef(){
   $('refBody').innerHTML=list.length?list.map(a=>`<tr><td>${a.art}</td><td>${a.pred||'—'}</td><td style="text-align:right">${a.vol||'—'}</td><td style="text-align:right">${a.cogs?money(a.cogs):'—'}</td></tr>`).join(''):'<tr><td colspan="4" style="text-align:center;color:var(--ink3);padding:20px">нет данных</td></tr>';
 }
 
+/* ═══════ РЕЕСТР ═══════ */
+function renderReg(){
+  const q=(($('regSrch')||{}).value||'').toLowerCase();
+  const list=REG.filter(e=>!q||((e.state.art||'')+' '+(e.state.pred||'')).toLowerCase().includes(q))
+                .sort((a,b)=>(b.savedAt||'').localeCompare(a.savedAt||''));
+  $('regBody').innerHTML=list.length?list.map(e=>{
+    const st=e.state||{},rs=e.result||{};
+    const m=rs.marzha!=null?pct(rs.marzha*100):'—',pr=rs.profit!=null?money(rs.profit):'—';
+    const mc=rs.marzha>=0.2?'var(--green)':(rs.marzha>=0?'var(--amber)':'var(--red)');
+    const dt=e.savedAt?new Date(e.savedAt).toLocaleString('ru-RU'):'';
+    return `<tr style="cursor:pointer" onclick="loadEntry('${e.id.replace(/'/g,"\\'")}')">
+      <td>${st.ip||''}</td><td>${st.art||'—'}</td><td>${st.pred||'—'}</td><td>${st.scheme||''}${st.scheme==='FBS'?'·'+(st.hand||''):''}</td>
+      <td style="text-align:right;color:${mc};font-weight:700">${m}</td><td style="text-align:right">${pr}</td>
+      <td style="text-align:right;color:var(--ink3)">${dt}</td>
+      <td style="text-align:right"><button class="b" style="padding:3px 8px" onclick="event.stopPropagation();delEntry('${e.id.replace(/'/g,"\\'")}')">✕</button></td></tr>`;
+  }).join(''):'<tr><td colspan="8" style="text-align:center;color:var(--ink3);padding:20px">пока нет сохранённых расчётов</td></tr>';
+}
+async function loadEntry(id){
+  const e=REG.find(x=>x.id===id); if(!e)return;
+  S={...DEFAULT_STATE,...e.state};
+  if(S.ip!==$('i_ip').value){/* переключим ИП и подгрузим его справочник */}
+  const ip=currentIp(); C.tax=ip.tax; C.vat=ip.vat;
+  try{ARTS=await loadIp(ip);}catch(err){}
+  writeInputs(); tab('calc'); calc(); toast('Загружен расчёт: '+(S.art||''),'ok');
+}
+async function delEntry(id){
+  if(!ONLINE){toast('Нет подключения','err');return;}
+  try{await apiPost({action:'delete',id});REG=REG.filter(x=>x.id!==id);renderReg();toast('Удалено','ok');}
+  catch(e){toast('Ошибка: '+e.message,'err');}
+}
+
 /* ═══════ ВКЛАДКИ ═══════ */
-function tab(p){curTab=p;document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('on',t.dataset.p===p));['calc','const','ref'].forEach(x=>$('page-'+x).style.display=x===p?'':'none');if(p==='const')renderConst();if(p==='ref')renderRef();}
+function tab(p){curTab=p;document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('on',t.dataset.p===p));['calc','reg','const','ref'].forEach(x=>$('page-'+x).style.display=x===p?'':'none');if(p==='const')renderConst();if(p==='ref')renderRef();if(p==='reg')renderReg();}
 
 /* ═══════ СЕРВЕР ═══════ */
-async function apiGet(action){const u=CFG.url+(CFG.url.includes('?')?'&':'?')+'action='+action+'&key='+encodeURIComponent(CFG.key);const r=await fetch(u);if(!r.ok)throw new Error('HTTP '+r.status);const j=await r.json();if(j.error)throw new Error(j.error);return j;}
-async function apiPost(payload){const r=await fetch(CFG.url,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({key:CFG.key,...payload})});if(!r.ok)throw new Error('HTTP '+r.status);const j=await r.json();if(j.error)throw new Error(j.error);return j;}
+function parseJSON(t){
+  try{return JSON.parse(t);}catch(e){
+    if(/<html|<!doctype|accounts\.google|login/i.test(t))
+      throw new Error('сервер вернул не JSON (похоже на страницу входа). Проверь: Apps Script развёрнут как веб-приложение с доступом «Все», и в воркере вписан правильный /exec.');
+    throw new Error('ответ не JSON: '+t.slice(0,80));
+  }
+}
+async function apiGet(action){
+  const u=CFG.url+(CFG.url.includes('?')?'&':'?')+'action='+action+'&key='+encodeURIComponent(CFG.key);
+  const r=await fetch(u); const t=await r.text();
+  if(!r.ok)throw new Error('HTTP '+r.status+' '+t.slice(0,80));
+  const j=parseJSON(t); if(j.error)throw new Error(j.error); return j;
+}
+async function apiPost(payload){
+  const r=await fetch(CFG.url,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({key:CFG.key,...payload})});
+  const t=await r.text();
+  if(!r.ok)throw new Error('HTTP '+r.status+' '+t.slice(0,80));
+  const j=parseJSON(t); if(j.error)throw new Error(j.error); return j;
+}
+async function testConn(){
+  if(!$('set_url').value.trim()){toast('Впиши сначала Воркер URL','err');return;}
+  const old={...CFG};CFG.url=$('set_url').value.trim();CFG.key=$('set_key').value.trim();
+  try{const d=await apiGet('load');toast('Связь есть ✓ записей в реестре: '+((d.registry||[]).length),'ok');}
+  catch(e){alert('Не удалось связаться:\n\n'+e.message);}
+  CFG=old;
+}
 
 async function boot(){
   clock();setInterval(clock,30000);loadCfg();
@@ -523,6 +630,7 @@ async function boot(){
       const d=await apiGet('load');
       if(d.constants&&Object.keys(d.constants).length)C={...DEFAULT_CONST,...d.constants};
       if(d.comm&&d.comm.length)COMM=d.comm;
+      if(d.registry&&d.registry.length)REG=d.registry;
       if(d.state&&Object.keys(d.state).length)S={...DEFAULT_STATE,...d.state};
       $('saveStatus').textContent=d.savedAt?('Сохранено: '+new Date(d.savedAt).toLocaleString('ru-RU')):'';
     }catch(e){ ONLINE=false; showBanner('Сервер недоступен ('+e.message+') — работаю без сохранения.'); }
@@ -543,11 +651,20 @@ function showBanner(msg){const b=$('banner');b.className='banner show';b.innerHT
 
 async function saveState(){
   readInputs();
-  if(!ONLINE){toast('Нет подключения к Apps Script — расчёт сделан, но не сохранён','err');return;}
+  if(!ONLINE){toast('Нет подключения к воркеру — расчёт сделан, но не сохранён. Открой ⚙ → «Проверить связь».','err');return;}
   const btn=event&&event.target;if(btn)btn.disabled=true;
-  try{const r=compute();await apiPost({action:'saveState',state:S,result:{marzha:r.marzha,profit:r.profit,drr:r.drr}});
-    $('saveStatus').textContent='Сохранено: '+new Date().toLocaleString('ru-RU');toast('Сохранено ✓','ok');}
-  catch(e){toast('Ошибка сохранения: '+e.message,'err');}
+  try{
+    const r=compute(S);
+    const id=S.ip+'|'+(S.art||'без артикула');
+    const result={marzha:r.marzha,profit:r.profit,drr:r.drr};
+    await apiPost({action:'saveState',id,state:{...S},result});
+    const savedAt=new Date().toISOString();
+    const i=REG.findIndex(x=>x.id===id), entry={id,state:{...S},result,savedAt};
+    if(i>=0)REG[i]=entry; else REG.push(entry);
+    $('saveStatus').textContent='Сохранено: '+new Date(savedAt).toLocaleString('ru-RU')+' · '+(S.art||'');
+    toast('Сохранено ✓ (в реестре: '+REG.length+')','ok');
+    if(curTab==='reg')renderReg();
+  }catch(e){toast('Ошибка сохранения','err');alert('Сохранение не прошло:\n\n'+e.message);}
   if(btn)btn.disabled=false;
 }
 async function saveConst(){
