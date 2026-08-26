@@ -233,9 +233,9 @@ table{width:100%;border-collapse:collapse}
 <div class="ov" id="setOv">
   <div class="oc">
     <h3>Настройки</h3>
-    <p>Справочники читаются из опубликованных Google-CSV (уже вписаны). Apps Script нужен только чтобы сохранять расчёты и делиться ими между компами. У каждого ИП — свой налог.</p>
-    <div class="fld"><label>Apps Script URL (сохранение)</label><input id="set_url" placeholder="https://script.google.com/macros/s/…/exec"></div>
-    <div class="fld"><label>Ключ доступа</label><input id="set_key" placeholder="общий пароль команды"></div>
+    <p>Впиши адрес своего Cloudflare-воркера — через него идут и сохранение (воркер → Apps Script), и чтение CSV. Ключ — тот же, что в Apps Script. У каждого ИП свой налог.</p>
+    <div class="fld"><label>Воркер URL (сохранение + прокси CSV)</label><input id="set_url" placeholder="https://calc.твой-домен.workers.dev"></div>
+    <div class="fld"><label>Ключ доступа</label><input id="set_key" placeholder="общий пароль команды (как в Apps Script)"></div>
     <div id="ipEditor"></div>
     <div class="rr"><button class="b" onclick="closeSettings()">Отмена</button><button class="b pri" onclick="saveSettings()">Сохранить и загрузить</button></div>
   </div>
@@ -338,7 +338,11 @@ function parseEcon(text){
   }
   return m;
 }
-async function fetchText(url){const r=await fetch(url);if(!r.ok)throw new Error('HTTP '+r.status);return r.text();}
+async function fetchText(url){
+  // если задан воркер (CFG.url) — читаем CSV через него (обход CORS), иначе напрямую
+  const src=CFG.url?(CFG.url+(CFG.url.includes('?')?'&':'?')+'csv='+encodeURIComponent(url)):url;
+  const r=await fetch(src);if(!r.ok)throw new Error('HTTP '+r.status);return r.text();
+}
 async function loadIp(ip){
   const [aTxt,eTxt]=await Promise.all([fetchText(ip.arts),ip.econ?fetchText(ip.econ):Promise.resolve('')]);
   const arts=parseArts(aTxt);
@@ -522,7 +526,7 @@ async function boot(){
       if(d.state&&Object.keys(d.state).length)S={...DEFAULT_STATE,...d.state};
       $('saveStatus').textContent=d.savedAt?('Сохранено: '+new Date(d.savedAt).toLocaleString('ru-RU')):'';
     }catch(e){ ONLINE=false; showBanner('Сервер недоступен ('+e.message+') — работаю без сохранения.'); }
-  }else showBanner('Сохранение выключено: добавь Apps Script в ⚙ настройках. Справочник и расчёты работают.');
+  }else showBanner('Сохранение выключено: добавь воркер в ⚙ настройках. Справочник и расчёты работают.');
   // справочник активного ИП
   const ip=currentIp(); C.tax=ip.tax; C.vat=ip.vat;
   try{ ARTS=await loadIp(ip); }catch(e){ ARTS=DEMO_ARTS.slice(); showBanner('Не удалось прочитать CSV справочника ('+e.message+'). Показаны демо-данные. Возможно, нужен воркер-прокси — см. README.'); }
