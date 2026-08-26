@@ -1,1 +1,581 @@
-1
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Калькулятор маржи · WB FBW/FBS</title>
+<link href="https://fonts.googleapis.com/css2?family=Comfortaa:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#F0EBE1;--bg2:#E8E1D4;--bg3:#FAF8F4;--card:#FFF;--border:rgba(160,148,128,.25);--border2:rgba(160,148,128,.45);--ink:#1A1610;--ink2:#6B6357;--ink3:#A09688;--green:#2D7A4F;--red:#B84040;--amber:#A06820;--blue:#005BFF;--hl:#FBF3D6;--hl2:#F4E9C4;}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Comfortaa',sans-serif;background:var(--bg);color:var(--ink);font-size:13px}
+.header{background:var(--bg2);border-bottom:1px solid var(--border2);padding:0 16px;height:56px;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:100}
+.logo{width:34px;height:34px;border-radius:9px;background:var(--ink);color:var(--bg3);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:11px}
+.bname{font-size:15px;font-weight:700}.bsub{font-size:8px;color:var(--ink3);letter-spacing:.12em;text-transform:uppercase}
+.tabs{display:flex;gap:2px;background:var(--bg);border-radius:8px;padding:3px;margin-left:14px}
+.tab{padding:6px 12px;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;border:none;background:0;color:var(--ink3);font-family:inherit;white-space:nowrap}
+.tab.on{background:var(--ink);color:var(--bg3)}
+.hright{margin-left:auto;display:flex;align-items:center;gap:8px}
+.clock{font-size:11px;color:var(--ink2);white-space:nowrap}
+.b{padding:6px 11px;background:0;border:1px solid var(--border2);border-radius:7px;font-size:11px;font-weight:600;color:var(--ink2);cursor:pointer;font-family:inherit;white-space:nowrap}
+.b:hover{background:var(--ink);color:var(--bg3);border-color:var(--ink)}.b:disabled{opacity:.4;cursor:default}
+.b.pri{background:var(--ink);color:var(--bg3);border-color:var(--ink)}.b.pri:hover{opacity:.9}
+.b.gr{background:var(--green);color:#fff;border-color:var(--green)}.b.gr:hover{opacity:.9}
+.main{padding:14px 16px;max-width:1200px;margin:0 auto}
+.banner{background:var(--hl);border:1px solid var(--hl2);border-radius:9px;padding:8px 12px;margin-bottom:12px;font-size:11px;color:var(--amber);display:none}
+.banner.show{display:block}.banner b{color:var(--ink2)}
+.grid2{display:grid;grid-template-columns:1.15fr .85fr;gap:12px;align-items:start}
+@media(max-width:920px){.grid2{grid-template-columns:1fr}}
+.card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin-bottom:12px}
+.ct{font-size:11px;font-weight:700;color:var(--ink2);text-transform:uppercase;letter-spacing:.1em;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;gap:8px}
+.seg{display:inline-flex;background:var(--bg);border-radius:7px;padding:2px}
+.seg button{border:0;background:0;font-family:inherit;font-size:11px;font-weight:700;color:var(--ink3);padding:5px 12px;border-radius:5px;cursor:pointer}
+.seg button.on{background:var(--ink);color:var(--bg3)}
+.row{display:flex;flex-wrap:wrap;gap:10px 14px;margin-bottom:4px}
+.f{display:flex;flex-direction:column;gap:4px;flex:1;min-width:130px}
+.f label{font-size:9.5px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.05em}
+.f input,.f select{padding:7px 9px;font-size:13px;background:var(--bg3);border:1px solid var(--border2);border-radius:7px;color:var(--ink);font-family:inherit;outline:0;width:100%}
+.f input:focus,.f select:focus{border-color:var(--ink)}
+.f input.auto{background:#F3EEE6;color:var(--ink2)}
+.sub{font-size:10px;color:var(--ink3);margin:2px 0 10px}
+.mg{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:12px}
+.mc{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px 14px}
+.mc.big{grid-column:span 3;background:var(--ink);border-color:var(--ink)}
+.ml{font-size:9px;color:var(--ink3);text-transform:uppercase;letter-spacing:.12em;font-weight:700;margin-bottom:6px}
+.mc.big .ml{color:var(--bg3);opacity:.6}
+.mv{font-size:24px;font-weight:700;line-height:1}.mv.g{color:var(--green)}.mv.r{color:var(--red)}.mv.a{color:var(--amber)}.mv.b{color:var(--blue)}
+.mc.big .mv{font-size:30px;color:var(--bg3)}
+.md{font-size:10.5px;margin-top:5px;color:var(--ink3)}.md b{color:var(--ink2)}
+.mc.big .md{color:var(--bg3);opacity:.7}.mc.big .md b{color:var(--bg3)}
+table{width:100%;border-collapse:collapse}
+.brk td{padding:5px 4px;border-bottom:1px solid var(--border);font-size:12px;color:var(--ink)}
+.brk td:first-child{color:var(--ink2)}
+.brk td:last-child{text-align:right;font-variant-numeric:tabular-nums;font-weight:600;white-space:nowrap}
+.brk tr.g td{color:var(--green)}
+.brk tr.h td{font-weight:700;background:var(--bg3);text-transform:uppercase;font-size:9px;letter-spacing:.08em;color:var(--ink3);border-bottom:1px solid var(--border2)}
+.brk tr.tot td{font-weight:700;background:var(--bg2);border-top:1px solid var(--border2)}
+.brk td .neg{color:var(--red)}
+.ktbl{width:100%;border-collapse:collapse;font-size:12px}
+.ktbl th{text-align:left;padding:6px 8px;font-size:9px;font-weight:700;color:var(--ink3);background:var(--bg3);text-transform:uppercase;letter-spacing:.03em;border-bottom:1px solid var(--border)}
+.ktbl th:not(:first-child){text-align:right}
+.ktbl td{padding:4px 8px;border-bottom:1px solid var(--border)}
+.ktbl td:first-child{font-weight:700;color:var(--ink2)}
+.ktbl input{width:80px;padding:5px 7px;font-size:12px;background:var(--bg3);border:1px solid var(--border2);border-radius:6px;color:var(--ink);font-family:inherit;outline:0;text-align:right}
+.ktbl input:focus{border-color:var(--ink)}
+.ktbl td:not(:first-child){text-align:right}
+.ce{display:grid;grid-template-columns:1fr auto;gap:8px 12px;align-items:center;padding:5px 0;border-bottom:1px solid var(--border)}
+.ce label{font-size:12px;color:var(--ink2)}
+.ce input,.ce select{width:120px;padding:6px 8px;font-size:12px;background:var(--bg3);border:1px solid var(--border2);border-radius:6px;color:var(--ink);font-family:inherit;outline:0;text-align:right}
+.ce input:focus{border-color:var(--ink)}
+.srch{padding:7px 9px;font-size:12px;background:var(--bg3);border:1px solid var(--border2);border-radius:7px;color:var(--ink);font-family:inherit;outline:0;min-width:200px}
+.lm{padding:40px 24px;text-align:center;color:var(--ink3)}
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--ink);color:var(--bg3);padding:11px 18px;border-radius:10px;font-size:12px;font-weight:600;opacity:0;pointer-events:none;transition:.2s;z-index:300;box-shadow:0 8px 30px rgba(0,0,0,.2)}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.toast.err{background:var(--red)}.toast.ok{background:var(--green)}
+.ov{display:none;position:fixed;inset:0;background:rgba(240,235,225,.95);backdrop-filter:blur(6px);z-index:200;align-items:center;justify-content:center}
+.ov.show{display:flex}
+.oc{background:var(--card);border:1px solid var(--border2);border-radius:16px;padding:22px;width:560px;max-width:92vw;max-height:90vh;overflow:auto;box-shadow:0 8px 40px rgba(0,0,0,.1)}
+.oc h3{font-size:15px;margin-bottom:4px}.oc p{font-size:11px;color:var(--ink3);margin-bottom:14px;line-height:1.6}
+.oc .fld{margin-bottom:9px}.oc .fld label{font-size:10px;font-weight:700;color:var(--ink2);text-transform:uppercase;letter-spacing:.05em;display:block;margin-bottom:4px}
+.oc input{width:100%;padding:8px 10px;border:1px solid var(--border2);border-radius:8px;font-size:12px;font-family:inherit;outline:0;background:var(--bg3)}
+.oc input:focus{border-color:var(--ink)}
+.oc .ipbox{border:1px solid var(--border);border-radius:10px;padding:10px 12px;margin-bottom:10px}
+.oc .ipbox .ct2{font-size:10px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px}
+.oc .two{display:flex;gap:8px}.oc .two>div{flex:1}
+.oc .rr{display:flex;gap:8px;justify-content:flex-end;margin-top:6px}
+.savebar{position:sticky;bottom:0;background:linear-gradient(transparent,var(--bg) 40%);padding:14px 0 4px;display:flex;gap:8px;justify-content:flex-end;margin-top:4px}
+.status{font-size:10px;color:var(--ink3);margin-right:auto;align-self:center}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="logo">₽</div>
+  <div><div class="bname">Калькулятор маржи</div><div class="bsub">Wildberries · FBW / FBS</div></div>
+  <div class="tabs" id="tabs">
+    <button class="tab on" data-p="calc" onclick="tab('calc')">Калькулятор</button>
+    <button class="tab" data-p="const" onclick="tab('const')">Константы</button>
+    <button class="tab" data-p="ref" onclick="tab('ref')">Справочник</button>
+  </div>
+  <div class="hright">
+    <div class="clock" id="clk"></div>
+    <button class="b" onclick="openSettings()">⚙ настройки</button>
+    <button class="b pri" onclick="reload()">↻ обновить</button>
+  </div>
+</div>
+
+<div class="main">
+  <div class="banner" id="banner"></div>
+
+  <!-- ═══════ КАЛЬКУЛЯТОР ═══════ -->
+  <div id="page-calc">
+    <div class="grid2">
+      <div>
+        <div class="card">
+          <div class="ct">Товар и режим</div>
+          <div class="row">
+            <div class="f" id="ipWrap" style="max-width:120px"><label>ИП</label><select id="i_ip" onchange="switchIp()"></select></div>
+            <div class="f" style="flex:2">
+              <label>Артикул <span id="artCount" style="color:var(--ink3)"></span></label>
+              <input id="i_art" list="artList" placeholder="начни вводить артикул…" autocomplete="off" oninput="pickArt()">
+              <datalist id="artList"></datalist>
+            </div>
+            <div class="f"><label>Предмет (комиссия)</label>
+              <input id="i_pred" list="predList" autocomplete="off" oninput="calc()">
+              <datalist id="predList"></datalist>
+            </div>
+          </div>
+          <div class="row">
+            <div class="f"><label>Схема</label>
+              <div class="seg" id="seg_scheme"><button class="on" onclick="setScheme('FBW')">FBW</button><button onclick="setScheme('FBS')">FBS</button></div>
+            </div>
+            <div class="f"><label>Сдача</label>
+              <div class="seg" id="seg_hand"><button class="on" onclick="setHand('СЦ')">в СЦ</button><button onclick="setHand('ПВЗ')">в ПВЗ</button></div>
+            </div>
+            <div class="f" id="fbsTimeWrap" style="display:none"><label>Время сдачи (FBS)</label>
+              <select id="i_fbsTime" onchange="calc()">
+                <option value="t13">до 13ч (−5 п.п.)</option>
+                <option value="t42">13–42ч (−3.5 п.п.)</option>
+                <option value="none">после 42ч (без бонуса)</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="ct">Цена и товар</div>
+          <div class="row">
+            <div class="f"><label>Цена продавца, ₽</label><input type="number" id="i_price" oninput="calc()"></div>
+            <div class="f"><label>Скидка продавца, %</label><input type="number" id="i_disc" oninput="calc()"></div>
+            <div class="f"><label>СПП, %</label><input type="number" id="i_spp" oninput="calc()"></div>
+          </div>
+          <div class="row">
+            <div class="f"><label>Себестоимость, ₽ <span style="color:var(--ink3)">(Расход-ШТ)</span></label><input type="number" id="i_cogs" class="auto" oninput="calc()"></div>
+            <div class="f"><label>Объём, л</label><input type="number" step="0.01" id="i_vol" class="auto" oninput="calc()"></div>
+            <div class="f"><label>Выкуп (ручной), %</label><input type="number" id="i_buyM" oninput="calc()"></div>
+          </div>
+          <div class="sub" id="buyoutNote"></div>
+        </div>
+
+        <div class="card">
+          <div class="ct">Реклама</div>
+          <div class="row">
+            <div class="f"><label>Ставка / 1000 показов, ₽</label><input type="number" id="i_bid" oninput="calc()"></div>
+            <div class="f"><label>CTR, %</label><input type="number" step="0.01" id="i_ctr" oninput="calc()"></div>
+            <div class="f"><label>CR (заказ/клик), %</label><input type="number" step="0.01" id="i_cr" oninput="calc()"></div>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <div class="mg">
+          <div class="mc big"><div class="ml">Маржинальность</div><div class="mv" id="m_marzha">—</div><div class="md" id="m_marzha_d"></div></div>
+          <div class="mc"><div class="ml">Прибыль с продажи</div><div class="mv" id="m_profit">—</div><div class="md">₽ / шт</div></div>
+          <div class="mc"><div class="ml">Прибыль до рекл.</div><div class="mv" id="m_profit0">—</div><div class="md">₽ / шт</div></div>
+          <div class="mc"><div class="ml">ДРР</div><div class="mv b" id="m_drr">—</div><div class="md">доля рекламы</div></div>
+          <div class="mc"><div class="ml">Логистика с выкупом</div><div class="mv" id="m_log">—</div><div class="md" id="m_log_d">₽ / шт</div></div>
+          <div class="mc"><div class="ml">Цена на сайте</div><div class="mv" id="m_site">—</div><div class="md">с учётом СПП</div></div>
+        </div>
+        <div class="card">
+          <div class="ct">Экономика по шагам <span id="brkMode" style="font-size:9px;color:var(--ink3)"></span></div>
+          <table class="brk"><tbody id="brk"></tbody></table>
+        </div>
+      </div>
+    </div>
+
+    <div class="savebar">
+      <div class="status" id="saveStatus"></div>
+      <button class="b" onclick="reload()">Сбросить к сохранённому</button>
+      <button class="b gr" onclick="saveState()">💾 Рассчитать и сохранить</button>
+    </div>
+  </div>
+
+  <!-- ═══════ КОНСТАНТЫ ═══════ -->
+  <div id="page-const" style="display:none">
+    <div class="grid2">
+      <div class="card">
+        <div class="ct">Комиссия ВБ по предметам, % <button class="b" onclick="seedComm()">+ предметы из справочника</button></div>
+        <div class="sub">FBW — из колонки FBW, FBS — из FBS. Для предметов вне таблицы берётся дефолт (ниже). Для FBS дополнительно вычитается бонус за время сдачи.</div>
+        <table class="ktbl"><thead><tr><th>Предмет</th><th>FBW</th><th>FBS</th><th></th></tr></thead><tbody id="commBody"></tbody></table>
+        <button class="b" style="margin-top:8px" onclick="addComm()">+ строка</button>
+      </div>
+      <div>
+        <div class="card"><div class="ct">Логистика</div><div id="cLog"></div></div>
+        <div class="card"><div class="ct">Приёмка / хранение</div><div id="cAcc"></div></div>
+      </div>
+    </div>
+    <div class="grid2">
+      <div class="card"><div class="ct">Комиссии площадки и дефолты</div><div id="cFin"></div>
+        <div class="sub" style="margin-top:8px">Налог и НДС задаются отдельно на каждый ИП в ⚙ настройках (у ИП2 налог отличается от ИП1).</div>
+      </div>
+      <div class="card"><div class="ct">Постоянные и выкуп</div><div id="cFix"></div></div>
+    </div>
+    <div class="savebar">
+      <div class="status" id="constStatus"></div>
+      <button class="b" onclick="resetConst()">Сбросить к дефолту</button>
+      <button class="b gr" onclick="saveConst()">💾 Сохранить константы</button>
+    </div>
+  </div>
+
+  <!-- ═══════ СПРАВОЧНИК ═══════ -->
+  <div id="page-ref" style="display:none">
+    <div class="card">
+      <div class="ct">Справочник артикулов <input class="srch" id="refSrch" placeholder="поиск по артикулу / предмету…" oninput="renderRef()"></div>
+      <div class="sub">Объём — из листа справочника («Объём, л»), себестоимость — из «Экон» → «Расход-ШТ». Правится в Google-таблицах.</div>
+      <table class="ktbl"><thead><tr><th>Артикул</th><th>Предмет</th><th>Объём, л</th><th>Себест., ₽</th></tr></thead><tbody id="refBody"></tbody></table>
+    </div>
+  </div>
+
+  <div id="placeholder" class="lm">Загрузка…</div>
+</div>
+
+<!-- Настройки -->
+<div class="ov" id="setOv">
+  <div class="oc">
+    <h3>Настройки</h3>
+    <p>Справочники читаются из опубликованных Google-CSV (уже вписаны). Apps Script нужен только чтобы сохранять расчёты и делиться ими между компами. У каждого ИП — свой налог.</p>
+    <div class="fld"><label>Apps Script URL (сохранение)</label><input id="set_url" placeholder="https://script.google.com/macros/s/…/exec"></div>
+    <div class="fld"><label>Ключ доступа</label><input id="set_key" placeholder="общий пароль команды"></div>
+    <div id="ipEditor"></div>
+    <div class="rr"><button class="b" onclick="closeSettings()">Отмена</button><button class="b pri" onclick="saveSettings()">Сохранить и загрузить</button></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ═══════ КОНФИГ ═══════ */
+const LS_CFG='calc_cfg_v2';
+
+/* Реальные опубликованные CSV (справочник = «Объём, л», экон = «Расход-ШТ»). Правятся в ⚙ настройках. */
+const IP1_ARTS='https://docs.google.com/spreadsheets/d/e/2PACX-1vRv2VuvAbmweu5Q_5cj-zoss2s3RoFMwKfK2z6tp22oG7FFfNGvoR8LYAyv56tvnvdJc6wouLBaYpph/pub?gid=612792464&single=true&output=csv';
+const IP2_ARTS='https://docs.google.com/spreadsheets/d/e/2PACX-1vS4upRNoJpKgaEClkUgzfEBePMDEIYNBNHGO-iV5wqa0lzZPh1wLKuRw-fC2XDyc-kixxFbq4nPbKh9/pub?gid=612792464&single=true&output=csv';
+const IP1_ECON='https://docs.google.com/spreadsheets/d/e/2PACX-1vRd-F9AS2AOqG3-_39PX6jHwU-5fYDYuojWhuz07tZM7qkIxxCZriy-fQiqxmwYPFm3Za82g-dU1T7B/pub?gid=1189729527&single=true&output=csv';
+const IP2_ECON='https://docs.google.com/spreadsheets/d/e/2PACX-1vQuVvUEHyqdVP2ZHULOoeNyKdJrnI5qHcp8EI9uEns-xFfRaH_OifbV4yZEqeS_1a7CBVKMQ2TYi9pp/pub?gid=1189729527&single=true&output=csv';
+const DEFAULT_IPS=[
+  {name:'ИП1', arts:IP1_ARTS, econ:IP1_ECON, tax:6, vat:5},
+  {name:'ИП2', arts:IP2_ARTS, econ:IP2_ECON, tax:6, vat:0}   /* налог ИП2 — поставь свой в настройках */
+];
+
+const DEFAULT_CONST={
+  log_l1:32, log_l2:28, log_l3:14, log_coef:1.70,
+  prep_fbw_sc:0, prep_fbw_pvz:5, prep_fbs_sc:0, prep_fbs_pvz:10,
+  move:0, store_per_l:0.14, store_days:0,
+  acquiring:2.5, wallet:3,
+  comm_def_fbw:40, comm_def_fbs:44,
+  outsource:30, fixed:15,
+  fbs_t13:5, fbs_t42:3.5,
+  by_P0:400, by_B0:80, by_e:-1, by_dmin:14, by_dmax:7, by_mode:'avg',
+  ad_bid:400, ad_ctr:17, ad_cr:9,
+  tax:6, vat:5   /* перезаписываются из активного ИП */
+};
+const DEFAULT_STATE={ ip:'ИП1', art:'', pred:'', scheme:'FBW', hand:'СЦ', fbsTime:'t13',
+  price:1199, disc:4, spp:33, cogs:0, vol:0, buyM:75, bid:400, ctr:17, cr:9 };
+const DEFAULT_COMM=[
+  {pred:'Термоноски',fbw:39.5,fbs:44},{pred:'Термокомплекты',fbw:34.5,fbs:39},
+  {pred:'Трусы',fbw:39.5,fbs:44},{pred:'Термомайки',fbw:43.5,fbs:48},{pred:'Леггинсы',fbw:43.5,fbs:48}
+];
+const DEMO_ARTS=[{art:'Pantal.SK.bejnew.02',pred:'Трусы',vol:0.47,cogs:214}];
+
+/* ═══════ STATE ═══════ */
+let CFG={url:'',key:'',ips:DEFAULT_IPS.map(x=>({...x}))};
+let C={...DEFAULT_CONST}, COMM=DEFAULT_COMM.map(x=>({...x}));
+let ARTS=[], S={...DEFAULT_STATE}, ONLINE=false, curTab='calc';
+
+/* ═══════ УТИЛИТЫ ═══════ */
+const $=id=>document.getElementById(id);
+const numRu=v=>{const n=parseFloat(String(v==null?'':v).replace(/\u00a0/g,'').replace(/\s/g,'').replace(',','.'));return isFinite(n)?n:0;};
+const num=numRu;
+const money=n=>Math.round(n).toLocaleString('ru-RU')+' ₽';
+const money1=n=>(Math.round(n*10)/10).toLocaleString('ru-RU')+' ₽';
+const pct=n=>(Math.round(n*10)/10).toLocaleString('ru-RU')+' %';
+const norm=s=>String(s==null?'':s).toLowerCase().replace(/\s+/g,'');
+function toast(msg,kind){const t=$('toast');t.textContent=msg;t.className='toast show'+(kind?' '+kind:'');setTimeout(()=>t.className='toast',2400);}
+function clock(){const d=new Date();$('clk').textContent=d.toLocaleDateString('ru-RU')+' '+d.toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'});}
+
+/* ═══════ CSV ═══════ */
+function detectDelim(head){return (head.split(';').length>head.split(',').length)?';':',';}
+function parseCSV(text){
+  const s=text.replace(/\r\n/g,'\n').replace(/\r/g,'\n');
+  const delim=detectDelim(s.slice(0,s.indexOf('\n')>0?s.indexOf('\n'):s.length));
+  const rows=[];let row=[],f='',q=false;
+  for(let i=0;i<s.length;i++){const c=s[i];
+    if(q){if(c==='"'){if(s[i+1]==='"'){f+='"';i++;}else q=false;}else f+=c;}
+    else if(c==='"')q=true; else if(c===delim){row.push(f);f='';}
+    else if(c==='\n'){row.push(f);rows.push(row);row=[];f='';} else f+=c;}
+  if(f.length||row.length){row.push(f);rows.push(row);}
+  return rows;
+}
+const findCol=(H,...ns)=>{for(const n of ns){const i=H.indexOf(n);if(i>=0)return i;}for(let i=0;i<H.length;i++)for(const n of ns)if(H[i].includes(n))return i;return -1;};
+
+/* Справочник: Артикул поставщика · Предмет · Объём, л  (одна строка на размер → дедуп по артикулу) */
+function parseArts(text){
+  const rows=parseCSV(text); if(rows.length<2)return[];
+  const H=rows[0].map(x=>String(x).trim().toLowerCase());
+  const iA=findCol(H,'артикул поставщика','артикул'),iP=findCol(H,'предмет'),iV=findCol(H,'объём, л','объем, л','объём','объем','литр');
+  const map=new Map();
+  for(let r=1;r<rows.length;r++){
+    const art=iA>=0?String(rows[r][iA]||'').trim():''; if(!art)continue;
+    const pred=iP>=0?String(rows[r][iP]||'').trim():'';
+    const vol=iV>=0?numRu(rows[r][iV]):0;
+    const cur=map.get(art);
+    if(!cur)map.set(art,{art,pred,vol,cogs:0});
+    else if(!cur.vol&&vol)cur.vol=vol;   /* берём первый ненулевой объём */
+  }
+  return [...map.values()];
+}
+/* Экон: ключ «Предмет+Артикул» (склейка) → «Расход-ШТ» = себестоимость */
+function parseEcon(text){
+  const rows=parseCSV(text); if(rows.length<2)return new Map();
+  const H=rows[0].map(x=>String(x).trim().toLowerCase());
+  const iK=findCol(H,'предмет;артикул','артикул');      /* склеенный ключ в 1-й колонке */
+  const iC=findCol(H,'расход-шт','расход-шт ','расходшт');
+  const m=new Map();
+  for(let r=1;r<rows.length;r++){
+    const key=norm(rows[r][iK>=0?iK:0]); if(!key)continue;
+    const cogs=iC>=0?numRu(rows[r][iC]):0;
+    if(cogs>0)m.set(key,cogs);
+  }
+  return m;
+}
+async function fetchText(url){const r=await fetch(url);if(!r.ok)throw new Error('HTTP '+r.status);return r.text();}
+async function loadIp(ip){
+  const [aTxt,eTxt]=await Promise.all([fetchText(ip.arts),ip.econ?fetchText(ip.econ):Promise.resolve('')]);
+  const arts=parseArts(aTxt);
+  const econ=eTxt?parseEcon(eTxt):new Map();
+  arts.forEach(a=>{a.cogs=econ.get(norm((a.pred||'')+a.art))||0;});
+  arts.sort((x,y)=>x.art.localeCompare(y.art,'ru'));
+  return arts;
+}
+function currentIp(){return CFG.ips.find(x=>x.name===S.ip)||CFG.ips[0];}
+
+/* ═══════ РАСЧЁТ ═══════ */
+function buyoutCalc(){
+  const P0=C.by_P0,B0=C.by_B0/100,e=C.by_e,Bmin=B0-C.by_dmin/100,Bmax=B0+C.by_dmax/100;
+  const priceSPP=S.price*(1-S.disc/100)*(1-S.spp/100);
+  return Math.max(Bmin,Math.min(Bmax,B0*Math.pow(priceSPP/P0,e)));
+}
+function effBuyout(){const c=buyoutCalc(),m=S.buyM/100;return C.by_mode==='calc'?c:C.by_mode==='manual'?m:(c+m)/2;}
+function logisticsForward(vol){return (C.log_l1+C.log_l2*Math.max(0,Math.min(vol-1,1))+C.log_l3*Math.max(0,vol-2))*C.log_coef;}
+function prepCost(){return S.scheme==='FBW'?(S.hand==='ПВЗ'?C.prep_fbw_pvz:C.prep_fbw_sc):(S.hand==='ПВЗ'?C.prep_fbs_pvz:C.prep_fbs_sc);}
+function commPct(){
+  const rec=COMM.find(c=>norm(c.pred)===norm(S.pred));
+  let base=rec?(S.scheme==='FBW'?rec.fbw:rec.fbs):(S.scheme==='FBW'?C.comm_def_fbw:C.comm_def_fbs);
+  if(S.scheme==='FBS'){ if(S.fbsTime==='t13')base-=C.fbs_t13; else if(S.fbsTime==='t42')base-=C.fbs_t42; }
+  return Math.max(0,base);
+}
+function commKnown(){return !!COMM.find(c=>norm(c.pred)===norm(S.pred));}
+function compute(){
+  const b=effBuyout();
+  const priceDisc=S.price*(1-S.disc/100), priceSPP=priceDisc*(1-S.spp/100);
+  const wallet=priceSPP*(C.wallet/100), priceSite=priceSPP-wallet;
+  const acquiring=priceDisc*(C.acquiring/100);
+  const comm=commPct()/100, commRub=priceDisc*comm, toTransfer=priceDisc-commRub-acquiring;
+  const logFwd=logisticsForward(S.vol), logWithBuyout=b>0?(logFwd+(1-b)*logFwd)/b:logFwd;
+  const prep=prepCost(), move=C.move, store=C.store_per_l*S.vol*C.store_days;
+  const tax=priceDisc*(C.tax/100), vat=priceDisc*(C.vat/100);
+  const profit0=toTransfer-S.cogs-C.outsource-C.fixed-logWithBuyout-prep-move-store-tax-vat;
+  const clicks=1000*(S.ctr/100), cpc=clicks>0?S.bid/clicks:0;
+  const orders=Math.ceil(clicks*(S.cr/100)), cpo=orders>0?S.bid/orders:0;
+  const cps=b>0?cpo/b:cpo, drr=priceSPP>0?cps/priceSPP:0;
+  const profit=profit0-cps, marzha=priceSite>0?profit/priceSite:0;
+  return {b,priceDisc,priceSPP,wallet,priceSite,acquiring,comm,commRub,toTransfer,logFwd,logWithBuyout,prep,move,store,tax,vat,profit0,cpc,orders,cpo,cps,drr,profit,marzha};
+}
+function fmt(n){return (Math.round(n*100)/100).toLocaleString('ru-RU');}
+function neg(v){return '<span class="neg">−'+money(Math.abs(v))+'</span>';}
+function calc(){
+  readInputs();
+  const r=compute();
+  $('m_marzha').textContent=pct(r.marzha*100);
+  $('m_marzha').style.color=r.marzha>=0.2?'#8FE3B0':(r.marzha>=0?'#F0C98A':'#F0A0A0');
+  $('m_marzha_d').innerHTML='прибыль <b>'+money(r.profit)+'</b> с цены на сайте <b>'+money(r.priceSite)+'</b>';
+  $('m_profit').textContent=money(r.profit); $('m_profit').className='mv '+(r.profit>=0?'g':'r');
+  $('m_profit0').textContent=money(r.profit0); $('m_profit0').className='mv '+(r.profit0>=0?'g':'r');
+  $('m_drr').textContent=pct(r.drr*100);
+  $('m_log').textContent=money1(r.logWithBuyout);
+  $('m_log_d').innerHTML='без возврата <b>'+money1(r.logFwd)+'</b>';
+  $('m_site').textContent=money(r.priceSite);
+  $('buyoutNote').innerHTML=`Выкуп: <b>${pct(r.b*100)}</b> (эласт. ${pct(buyoutCalc()*100)} · ручной ${pct(S.buyM)}). Комиссия ВБ: <b>${pct(commPct())}</b>`
+    +(commKnown()?'':' <span style="color:var(--amber)">(предмет не в таблице — дефолт)</span>')+`. Налог ${S.ip}: <b>${fmt(C.tax)}%</b>${C.vat?' + НДС '+fmt(C.vat)+'%':''}.`;
+  const rows=[
+    ['h','Выручка',''],
+    ['','Цена продавца',money(S.price)],['','− скидка '+fmt(S.disc)+'%',neg(S.price*S.disc/100)],
+    ['','Цена со скидкой',money(r.priceDisc)],['','− СПП '+fmt(S.spp)+'%',neg(r.priceDisc*S.spp/100)],
+    ['','Цена с СПП',money(r.priceSPP)],['','− WB-кошелёк '+fmt(C.wallet)+'%',neg(r.wallet)],
+    ['tot','Цена на сайте',money(r.priceSite)],
+    ['h','Удержания ВБ',''],
+    ['','Комиссия ВБ '+fmt(commPct())+'%',neg(r.commRub)],['','Эквайринг '+fmt(C.acquiring)+'%',neg(r.acquiring)],
+    ['tot','Цена к перечислению',money(r.toTransfer)],
+    ['h','Расходы',''],
+    ['','Себестоимость (Расход-ШТ)',neg(S.cogs)],['','Логистика с выкупом',neg(r.logWithBuyout)],
+    ['','Приёмка / подготовка',neg(r.prep)],['','Перемещение',neg(r.move)],['','Хранение ('+fmt(C.store_days)+' дн.)',neg(r.store)],
+    ['','Аутсорсинг',neg(C.outsource)],['','Постоянные',neg(C.fixed)],
+    ['','Налог '+fmt(C.tax)+'%',neg(r.tax)],['','НДС '+fmt(C.vat)+'%',neg(r.vat)],
+    ['tot','Прибыль до рекламы',money(r.profit0)],
+    ['h','Реклама',''],
+    ['','Заказов с 1000 показов',fmt(r.orders)+' шт'],['','CPO',money1(r.cpo)],['','Реклама на выкуп (CPS)',neg(r.cps)],['','ДРР',pct(r.drr*100)],
+    ['tot g','Прибыль с продажи',money(r.profit)],['tot','Маржинальность',pct(r.marzha*100)]
+  ];
+  $('brk').innerHTML=rows.map(([cls,l,v])=>`<tr class="${cls}"><td>${l}</td><td>${v}</td></tr>`).join('');
+  $('brkMode').textContent=S.ip+' · '+S.scheme+' · сдача в '+S.hand;
+}
+
+/* ═══════ ПОЛЯ ═══════ */
+function readInputs(){
+  S.price=num($('i_price').value);S.disc=num($('i_disc').value);S.spp=num($('i_spp').value);
+  S.cogs=num($('i_cogs').value);S.vol=num($('i_vol').value);S.buyM=num($('i_buyM').value);
+  S.bid=num($('i_bid').value);S.ctr=num($('i_ctr').value);S.cr=num($('i_cr').value);
+  S.pred=$('i_pred').value;S.fbsTime=$('i_fbsTime').value;S.art=$('i_art').value;
+}
+function writeInputs(){
+  $('i_price').value=S.price;$('i_disc').value=S.disc;$('i_spp').value=S.spp;
+  $('i_cogs').value=S.cogs;$('i_vol').value=S.vol;$('i_buyM').value=S.buyM;
+  $('i_bid').value=S.bid;$('i_ctr').value=S.ctr;$('i_cr').value=S.cr;
+  $('i_fbsTime').value=S.fbsTime;$('i_pred').value=S.pred;$('i_art').value=S.art;
+  fillArtList();fillPredList();fillIpSelect();
+  segSet('seg_scheme',S.scheme==='FBW'?0:1);segSet('seg_hand',S.hand==='СЦ'?0:1);
+  $('fbsTimeWrap').style.display=S.scheme==='FBS'?'':'none';
+}
+function fillIpSelect(){
+  const sel=$('i_ip');sel.innerHTML=CFG.ips.map(p=>`<option value="${p.name}">${p.name}</option>`).join('');
+  sel.value=S.ip; $('ipWrap').style.display=CFG.ips.length>1?'':'none';
+}
+function fillArtList(){
+  $('artList').innerHTML=ARTS.map(a=>`<option value="${a.art}">${a.pred} · ${a.vol||'?'} л</option>`).join('');
+  $('artCount').textContent=ARTS.length?('· '+ARTS.length):'';
+}
+function fillPredList(){
+  const preds=[...new Set([...COMM.map(c=>c.pred),...ARTS.map(a=>a.pred)].filter(Boolean))].sort((a,b)=>a.localeCompare(b,'ru'));
+  $('predList').innerHTML=preds.map(p=>`<option value="${p}">`).join('');
+}
+function pickArt(){
+  const a=ARTS.find(x=>x.art===$('i_art').value);
+  if(a){S.art=a.art; if(a.vol)$('i_vol').value=a.vol; $('i_cogs').value=a.cogs||0; if(a.pred)$('i_pred').value=a.pred;}
+  calc();
+}
+function setScheme(v){S.scheme=v;segSet('seg_scheme',v==='FBW'?0:1);$('fbsTimeWrap').style.display=v==='FBS'?'':'none';calc();}
+function setHand(v){S.hand=v;segSet('seg_hand',v==='СЦ'?0:1);calc();}
+function segSet(id,i){$(id).querySelectorAll('button').forEach((b,j)=>b.classList.toggle('on',j===i));}
+async function switchIp(){
+  S.ip=$('i_ip').value; const ip=currentIp();
+  C.tax=ip.tax; C.vat=ip.vat;
+  $('saveStatus').textContent='Загрузка справочника '+S.ip+'…';
+  try{ ARTS=await loadIp(ip); }catch(e){ toast('Ошибка загрузки '+S.ip+': '+e.message,'err'); }
+  fillArtList();fillPredList();
+  const a=ARTS.find(x=>x.art===S.art); if(a){$('i_vol').value=a.vol||0;$('i_cogs').value=a.cogs||0;}
+  $('saveStatus').textContent='';
+  calc();
+}
+
+/* ═══════ КОНСТАНТЫ UI ═══════ */
+const CDEF={
+  cLog:[['log_l1','1-й литр, ₽'],['log_l2','2-й литр, ₽'],['log_l3','3-й и далее литр, ₽'],['log_coef','Коэф. склада (×)']],
+  cAcc:[['prep_fbw_sc','Подготовка FBW · СЦ, ₽'],['prep_fbw_pvz','Подготовка FBW · ПВЗ, ₽'],['prep_fbs_sc','Приёмка FBS · СЦ, ₽'],['prep_fbs_pvz','Приёмка FBS · ПВЗ, ₽'],['move','Перемещение, ₽/ед'],['store_per_l','Хранение, ₽/литр/день'],['store_days','Дней хранения']],
+  cFin:[['acquiring','Эквайринг, %'],['wallet','WB-кошелёк, %'],['comm_def_fbw','Комиссия по умолч. FBW, %'],['comm_def_fbs','Комиссия по умолч. FBS, %'],['fbs_t13','FBS бонус до 13ч, п.%'],['fbs_t42','FBS бонус 13–42ч, п.%']],
+  cFix:[['outsource','Аутсорсинг, ₽/ед'],['fixed','Постоянные, ₽/ед'],['by_P0','Выкуп · P0 (база цены), ₽'],['by_B0','Выкуп · B0 базовый, %'],['by_e','Выкуп · эластичность e'],['by_dmin','Выкуп · Δ min, %'],['by_dmax','Выкуп · Δ max, %']]
+};
+function renderConst(){
+  for(const box in CDEF)$(box).innerHTML=CDEF[box].map(([k,l])=>`<div class="ce"><label>${l}</label><input type="number" step="any" value="${C[k]}" onchange="C['${k}']=num(this.value);calc()"></div>`).join('');
+  $('cFix').innerHTML+=`<div class="ce"><label>Выкуп в расчёте</label><select onchange="C.by_mode=this.value;calc()">
+    <option value="avg"${C.by_mode==='avg'?' selected':''}>среднее</option><option value="calc"${C.by_mode==='calc'?' selected':''}>эластичность</option><option value="manual"${C.by_mode==='manual'?' selected':''}>ручной</option></select></div>`;
+  renderComm();
+}
+function renderComm(){
+  $('commBody').innerHTML=COMM.map((c,i)=>`<tr>
+    <td><input style="width:170px;text-align:left" value="${c.pred}" onchange="COMM[${i}].pred=this.value;fillPredList();calc()"></td>
+    <td><input type="number" step="any" value="${c.fbw}" onchange="COMM[${i}].fbw=num(this.value);calc()"></td>
+    <td><input type="number" step="any" value="${c.fbs}" onchange="COMM[${i}].fbs=num(this.value);calc()"></td>
+    <td><button class="b" style="padding:3px 8px" onclick="COMM.splice(${i},1);renderComm();fillPredList();calc()">✕</button></td></tr>`).join('');
+}
+function addComm(){COMM.push({pred:'Новый предмет',fbw:C.comm_def_fbw,fbs:C.comm_def_fbs});renderComm();fillPredList();}
+function seedComm(){
+  const have=new Set(COMM.map(c=>norm(c.pred)));let n=0;
+  [...new Set(ARTS.map(a=>a.pred).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'ru')).forEach(p=>{
+    if(!have.has(norm(p))){COMM.push({pred:p,fbw:C.comm_def_fbw,fbs:C.comm_def_fbs});n++;}});
+  renderComm();fillPredList();toast(n?('Добавлено предметов: '+n):'Все предметы уже в таблице','ok');
+}
+function resetConst(){C={...DEFAULT_CONST};const ip=currentIp();C.tax=ip.tax;C.vat=ip.vat;COMM=DEFAULT_COMM.map(x=>({...x}));renderConst();calc();toast('Сброшено к дефолту');}
+
+/* ═══════ СПРАВОЧНИК ═══════ */
+function renderRef(){
+  const q=(($('refSrch')||{}).value||'').toLowerCase();
+  const list=ARTS.filter(a=>!q||(a.art+' '+a.pred).toLowerCase().includes(q)).slice(0,600);
+  $('refBody').innerHTML=list.length?list.map(a=>`<tr><td>${a.art}</td><td>${a.pred||'—'}</td><td style="text-align:right">${a.vol||'—'}</td><td style="text-align:right">${a.cogs?money(a.cogs):'—'}</td></tr>`).join(''):'<tr><td colspan="4" style="text-align:center;color:var(--ink3);padding:20px">нет данных</td></tr>';
+}
+
+/* ═══════ ВКЛАДКИ ═══════ */
+function tab(p){curTab=p;document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('on',t.dataset.p===p));['calc','const','ref'].forEach(x=>$('page-'+x).style.display=x===p?'':'none');if(p==='const')renderConst();if(p==='ref')renderRef();}
+
+/* ═══════ СЕРВЕР ═══════ */
+async function apiGet(action){const u=CFG.url+(CFG.url.includes('?')?'&':'?')+'action='+action+'&key='+encodeURIComponent(CFG.key);const r=await fetch(u);if(!r.ok)throw new Error('HTTP '+r.status);const j=await r.json();if(j.error)throw new Error(j.error);return j;}
+async function apiPost(payload){const r=await fetch(CFG.url,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({key:CFG.key,...payload})});if(!r.ok)throw new Error('HTTP '+r.status);const j=await r.json();if(j.error)throw new Error(j.error);return j;}
+
+async function boot(){
+  clock();setInterval(clock,30000);loadCfg();
+  // сначала пробуем сервер (константы+состояние), затем грузим справочник активного ИП
+  if(CFG.url){
+    ONLINE=true;
+    try{
+      const d=await apiGet('load');
+      if(d.constants&&Object.keys(d.constants).length)C={...DEFAULT_CONST,...d.constants};
+      if(d.comm&&d.comm.length)COMM=d.comm;
+      if(d.state&&Object.keys(d.state).length)S={...DEFAULT_STATE,...d.state};
+      $('saveStatus').textContent=d.savedAt?('Сохранено: '+new Date(d.savedAt).toLocaleString('ru-RU')):'';
+    }catch(e){ ONLINE=false; showBanner('Сервер недоступен ('+e.message+') — работаю без сохранения.'); }
+  }else showBanner('Сохранение выключено: добавь Apps Script в ⚙ настройках. Справочник и расчёты работают.');
+  // справочник активного ИП
+  const ip=currentIp(); C.tax=ip.tax; C.vat=ip.vat;
+  try{ ARTS=await loadIp(ip); }catch(e){ ARTS=DEMO_ARTS.slice(); showBanner('Не удалось прочитать CSV справочника ('+e.message+'). Показаны демо-данные. Возможно, нужен воркер-прокси — см. README.'); }
+  if(!ARTS.length)ARTS=DEMO_ARTS.slice();
+  if(!S.pred)S.pred=ARTS[0]?.pred||COMM[0].pred;
+  if(!S.art&&ARTS[0]){S.art=ARTS[0].art;S.vol=ARTS[0].vol;S.cogs=ARTS[0].cogs;}
+  $('placeholder').style.display='none';
+  writeInputs();
+  // автоподстановка объёма/себест из справочника если совпал артикул
+  const a=ARTS.find(x=>x.art===S.art); if(a){if(a.vol)$('i_vol').value=a.vol;if(a.cogs)$('i_cogs').value=a.cogs;}
+  calc();
+}
+function showBanner(msg){const b=$('banner');b.className='banner show';b.innerHTML='⚠ '+msg;}
+
+async function saveState(){
+  readInputs();
+  if(!ONLINE){toast('Нет подключения к Apps Script — расчёт сделан, но не сохранён','err');return;}
+  const btn=event&&event.target;if(btn)btn.disabled=true;
+  try{const r=compute();await apiPost({action:'saveState',state:S,result:{marzha:r.marzha,profit:r.profit,drr:r.drr}});
+    $('saveStatus').textContent='Сохранено: '+new Date().toLocaleString('ru-RU');toast('Сохранено ✓','ok');}
+  catch(e){toast('Ошибка сохранения: '+e.message,'err');}
+  if(btn)btn.disabled=false;
+}
+async function saveConst(){
+  if(!ONLINE){toast('Нет подключения к Apps Script','err');return;}
+  const btn=event&&event.target;if(btn)btn.disabled=true;
+  try{await apiPost({action:'saveConst',constants:C,comm:COMM});$('constStatus').textContent='Сохранено: '+new Date().toLocaleString('ru-RU');toast('Константы сохранены ✓','ok');}
+  catch(e){toast('Ошибка: '+e.message,'err');}
+  if(btn)btn.disabled=false;
+}
+function reload(){$('placeholder').style.display='block';$('banner').className='banner';boot();}
+
+/* ═══════ НАСТРОЙКИ ═══════ */
+function loadCfg(){try{const c=JSON.parse(localStorage.getItem(LS_CFG)||'{}');CFG.url=c.url||'';CFG.key=c.key||'';CFG.ips=(c.ips&&c.ips.length)?c.ips:DEFAULT_IPS.map(x=>({...x}));}catch(e){}}
+function openSettings(){
+  $('set_url').value=CFG.url;$('set_key').value=CFG.key;
+  $('ipEditor').innerHTML=CFG.ips.map((p,i)=>`<div class="ipbox"><div class="ct2">ИП №${i+1}</div>
+    <div class="two"><div class="fld"><label>Название</label><input id="ip_name_${i}" value="${p.name||''}"></div>
+      <div class="fld"><label>Налог, %</label><input id="ip_tax_${i}" value="${p.tax}"></div>
+      <div class="fld"><label>НДС, %</label><input id="ip_vat_${i}" value="${p.vat}"></div></div>
+    <div class="fld"><label>CSV справочника (Объём, л)</label><input id="ip_arts_${i}" value="${p.arts||''}"></div>
+    <div class="fld"><label>CSV «Экон» (Расход-ШТ)</label><input id="ip_econ_${i}" value="${p.econ||''}"></div></div>`).join('');
+  $('setOv').classList.add('show');
+}
+function closeSettings(){$('setOv').classList.remove('show');}
+function saveSettings(){
+  CFG.url=$('set_url').value.trim();CFG.key=$('set_key').value.trim();
+  CFG.ips=CFG.ips.map((p,i)=>({name:($('ip_name_'+i).value.trim()||('ИП'+(i+1))),tax:num($('ip_tax_'+i).value),vat:num($('ip_vat_'+i).value),arts:$('ip_arts_'+i).value.trim(),econ:$('ip_econ_'+i).value.trim()})).filter(p=>p.arts);
+  try{localStorage.setItem(LS_CFG,JSON.stringify(CFG));}catch(e){}
+  closeSettings();reload();
+}
+
+boot();
+</script>
+</body>
+</html>
