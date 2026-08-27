@@ -38,15 +38,16 @@ body{font-family:'Comfortaa',sans-serif;background:var(--bg);color:var(--ink);fo
 .f input:focus,.f select:focus{border-color:var(--ink)}
 .f input.auto{background:#F3EEE6;color:var(--ink2)}
 .sub{font-size:10px;color:var(--ink3);margin:2px 0 10px}
-.mg{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:12px}
-.mc{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px 14px}
-.mc.big{grid-column:span 3;background:var(--ink);border-color:var(--ink)}
-.ml{font-size:9px;color:var(--ink3);text-transform:uppercase;letter-spacing:.12em;font-weight:700;margin-bottom:6px}
-.mc.big .ml{color:var(--bg3);opacity:.6}
-.mv{font-size:24px;font-weight:700;line-height:1}.mv.g{color:var(--green)}.mv.r{color:var(--red)}.mv.a{color:var(--amber)}.mv.b{color:var(--blue)}
-.mc.big .mv{font-size:30px;color:var(--bg3)}
-.md{font-size:10.5px;margin-top:5px;color:var(--ink3)}.md b{color:var(--ink2)}
-.mc.big .md{color:var(--bg3);opacity:.7}.mc.big .md b{color:var(--bg3)}
+.mg{display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin-bottom:12px}
+@media(max-width:920px){.mg{grid-template-columns:repeat(2,1fr)}}
+.mc{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px 14px;min-width:0}
+.mc.dark{background:var(--ink);border-color:var(--ink)}
+.ml{font-size:9px;color:var(--ink3);text-transform:uppercase;letter-spacing:.1em;font-weight:700;margin-bottom:6px}
+.mc.dark .ml{color:var(--bg3);opacity:.6}
+.mv{font-size:22px;font-weight:700;line-height:1;white-space:nowrap}.mv.g{color:var(--green)}.mv.r{color:var(--red)}.mv.a{color:var(--amber)}.mv.b{color:var(--blue)}
+.mc.dark .mv{color:var(--bg3)}
+.md{font-size:10px;margin-top:5px;color:var(--ink3)}.md b{color:var(--ink2)}
+.mc.dark .md{color:var(--bg3);opacity:.7}.mc.dark .md b{color:var(--bg3)}
 table{width:100%;border-collapse:collapse}
 .brk td{padding:5px 4px;border-bottom:1px solid var(--border);font-size:12px;color:var(--ink)}
 .brk td:first-child{color:var(--ink2)}
@@ -58,7 +59,7 @@ table{width:100%;border-collapse:collapse}
 .ktbl{width:100%;border-collapse:collapse;font-size:12px}
 .ktbl th{text-align:left;padding:6px 8px;font-size:9px;font-weight:700;color:var(--ink3);background:var(--bg3);text-transform:uppercase;letter-spacing:.03em;border-bottom:1px solid var(--border)}
 .ktbl th:not(:first-child){text-align:right}
-.ktbl td{padding:4px 8px;border-bottom:1px solid var(--border)}
+.ktbl td{padding:4px 8px;border-bottom:1px solid var(--border);white-space:nowrap}
 .ktbl td:first-child{font-weight:700;color:var(--ink2)}
 .ktbl input{width:80px;padding:5px 7px;font-size:12px;background:var(--bg3);border:1px solid var(--border2);border-radius:6px;color:var(--ink);font-family:inherit;outline:0;text-align:right}
 .ktbl input:focus{border-color:var(--ink)}
@@ -111,27 +112,39 @@ table{width:100%;border-collapse:collapse}
 
   <!-- ═══════ КАЛЬКУЛЯТОР ═══════ -->
   <div id="page-calc">
+    <div class="mg">
+      <div class="mc dark"><div class="ml">Маржинальность</div><div class="mv" id="m_marzha">—</div><div class="md" id="m_marzha_d"></div></div>
+      <div class="mc"><div class="ml">Прибыль с продажи</div><div class="mv" id="m_profit">—</div><div class="md">₽ / шт</div></div>
+      <div class="mc"><div class="ml">Прибыль до рекл.</div><div class="mv" id="m_profit0">—</div><div class="md">₽ / шт</div></div>
+      <div class="mc"><div class="ml">ДРР</div><div class="mv b" id="m_drr">—</div><div class="md">доля рекламы</div></div>
+      <div class="mc"><div class="ml">Логистика с выкупом</div><div class="mv" id="m_log">—</div><div class="md" id="m_log_d">₽ / шт</div></div>
+      <div class="mc"><div class="ml">Цена на сайте</div><div class="mv" id="m_site">—</div><div class="md">с учётом СПП</div></div>
+    </div>
     <div class="grid2">
       <div>
         <div class="card">
           <div class="ct">Товар и режим</div>
           <div class="row">
-            <div class="f" id="ipWrap" style="max-width:110px"><label>ИП</label><select id="i_ip" onchange="switchIp()"></select></div>
+            <div class="f" id="ipWrap" style="max-width:100px"><label>ИП</label><select id="i_ip" onchange="switchIp()"></select></div>
             <div class="f"><label>Предмет (комиссия)</label>
               <input id="i_pred" list="predList" autocomplete="off" placeholder="выбери предмет…" oninput="onPred()">
               <datalist id="predList"></datalist>
             </div>
-            <div class="f" style="flex:2">
-              <label>Артикул <span id="artCount" style="color:var(--ink3)"></span></label>
+          </div>
+          <div class="row">
+            <div class="f" style="flex:2"><label>Артикул <span id="artCount" style="color:var(--ink3)"></span></label>
               <input id="i_art" list="artList" placeholder="начни вводить артикул…" autocomplete="off" oninput="pickArt()">
               <datalist id="artList"></datalist>
             </div>
+            <div class="f"><label>Примечание (сценарий)</label>
+              <input id="i_note" placeholder="напр. малютка / опт" oninput="calc()">
+            </div>
           </div>
           <div class="row">
-            <div class="f"><label>Схема</label>
+            <div class="f" style="max-width:150px"><label>Схема</label>
               <div class="seg" id="seg_scheme"><button class="on" onclick="setScheme('FBW')">FBW</button><button onclick="setScheme('FBS')">FBS</button></div>
             </div>
-            <div class="f" id="handWrap"><label>Сдача (только FBS)</label>
+            <div class="f" id="handWrap"><label>Сдача (FBS)</label>
               <div class="seg" id="seg_hand"><button class="on" onclick="setHand('СЦ')">в СЦ</button><button onclick="setHand('ПВЗ')">в ПВЗ</button></div>
             </div>
             <div class="f" id="fbsTimeWrap" style="display:none"><label>Время сдачи (FBS)</label>
@@ -167,54 +180,37 @@ table{width:100%;border-collapse:collapse}
             <div class="f"><label>CR (заказ/клик), %</label><input type="number" step="0.01" id="i_cr" oninput="calc()"></div>
           </div>
         </div>
+
+        <div class="savebar" style="position:static">
+          <div class="status" id="saveStatus"></div>
+          <button class="b" onclick="reload()">Сбросить</button>
+          <button class="b gr" onclick="saveState()">💾 Сохранить в реестр</button>
+        </div>
       </div>
 
       <div>
-        <div class="mg">
-          <div class="mc big"><div class="ml">Маржинальность</div><div class="mv" id="m_marzha">—</div><div class="md" id="m_marzha_d"></div></div>
-          <div class="mc"><div class="ml">Прибыль с продажи</div><div class="mv" id="m_profit">—</div><div class="md">₽ / шт</div></div>
-          <div class="mc"><div class="ml">Прибыль до рекл.</div><div class="mv" id="m_profit0">—</div><div class="md">₽ / шт</div></div>
-          <div class="mc"><div class="ml">ДРР</div><div class="mv b" id="m_drr">—</div><div class="md">доля рекламы</div></div>
-          <div class="mc"><div class="ml">Логистика с выкупом</div><div class="mv" id="m_log">—</div><div class="md" id="m_log_d">₽ / шт</div></div>
-          <div class="mc"><div class="ml">Цена на сайте</div><div class="mv" id="m_site">—</div><div class="md">с учётом СПП</div></div>
-        </div>
         <div class="card">
           <div class="ct">Экономика по шагам <span id="brkMode" style="font-size:9px;color:var(--ink3)"></span></div>
           <table class="brk"><tbody id="brk"></tbody></table>
           <div class="sub" style="margin-top:6px">Наведи курсор на строку — покажет формулу.</div>
         </div>
-        <div class="card">
-          <div class="ct">Сравнение FBW / FBS</div>
-          <div id="cmp"></div>
-        </div>
       </div>
-    </div>
-
-    <div class="savebar">
-      <div class="status" id="saveStatus"></div>
-      <button class="b" onclick="reload()">Сбросить к сохранённому</button>
-      <button class="b gr" onclick="saveState()">💾 Рассчитать и сохранить</button>
     </div>
   </div>
 
   <!-- ═══════ ТАБЛИЦА (МАТРИЦА) ═══════ -->
   <div id="page-matrix" style="display:none">
     <div class="card">
-      <div class="ct">Все артикулы · параметры калькулятора
+      <div class="ct">Сохранённые расчёты · таблицей
         <span style="display:flex;gap:8px;align-items:center">
           <span class="seg" id="seg_mscheme"><button class="on" onclick="setMScheme('FBW')">FBW</button><button onclick="setMScheme('FBS')">FBS</button></span>
+          <span class="seg" id="seg_mip"><button class="on" onclick="setMIp('')">все ИП</button></span>
           <input class="srch" id="mSrch" placeholder="поиск…" oninput="renderMatrix()">
           <button class="b" onclick="exportMatrix()">↓ CSV</button>
         </span>
       </div>
-      <div class="sub">Каждая строка — артикул текущего ИП, столбцы — расчёт по нему. Объём и себестоимость берутся из справочника, цена — из справочника/WB API (или общая ниже), остальные допущения (скидка, СПП, выкуп, реклама) — общие, из блока ниже.</div>
-      <div class="row" style="margin-bottom:10px">
-        <div class="f"><label>Цена по умолч., ₽</label><input type="number" id="m_price" oninput="renderMatrix()"></div>
-        <div class="f"><label>Скидка, %</label><input type="number" id="m_disc" oninput="renderMatrix()"></div>
-        <div class="f"><label>СПП, %</label><input type="number" id="m_spp" oninput="renderMatrix()"></div>
-        <div class="f"><label>Выкуп, %</label><input type="number" id="m_buy" oninput="renderMatrix()"></div>
-      </div>
-      <div style="overflow:auto;max-height:70vh"><table class="ktbl" id="matrixTbl"></table></div>
+      <div class="sub">Строки — последние сохранённые в реестр расчёты (по актуальным ценам сценариев). Столбцы — параметры калькулятора. Клик по строке — открыть сценарий. Переключатель FBW/FBS фильтрует по схеме.</div>
+      <div style="overflow:auto;max-height:74vh"><table class="ktbl" id="matrixTbl"></table></div>
     </div>
   </div>
 
@@ -222,8 +218,8 @@ table{width:100%;border-collapse:collapse}
   <div id="page-reg" style="display:none">
     <div class="card">
       <div class="ct">Реестр расчётов <input class="srch" id="regSrch" placeholder="поиск по артикулу / предмету…" oninput="renderReg()"></div>
-      <div class="sub">Сохранённые расчёты (кнопка «💾 Рассчитать и сохранить»). Клик по строке — загрузить в калькулятор. Один артикул на ИП обновляется, а не дублируется.</div>
-      <table class="ktbl"><thead><tr><th>ИП</th><th>Артикул</th><th>Предмет</th><th>Схема</th><th>Маржа</th><th>Прибыль</th><th>Сохранено</th><th></th></tr></thead><tbody id="regBody"></tbody></table>
+      <div class="sub">Сохранённые расчёты. Клик по строке — загрузить. Ключ: ИП + артикул + схема + примечание, поэтому один артикул можно хранить в нескольких сценариях (FBW/FBS и по примечаниям).</div>
+      <table class="ktbl"><thead><tr><th>ИП</th><th>Артикул</th><th>Примечание</th><th>Предмет</th><th>Схема</th><th>Маржа</th><th>Прибыль</th><th>Сохранено</th><th></th></tr></thead><tbody id="regBody"></tbody></table>
     </div>
   </div>
 
@@ -237,8 +233,8 @@ table{width:100%;border-collapse:collapse}
         <button class="b" style="margin-top:8px" onclick="addComm()">+ строка</button>
       </div>
       <div>
-        <div class="card"><div class="ct">Логистика</div><div id="cLog"></div></div>
-        <div class="card"><div class="ct">Приёмка / хранение</div><div id="cAcc"></div></div>
+        <div class="card"><div class="ct">Логистика · FBW и FBS раздельно</div><div id="cLog"></div></div>
+        <div class="card"><div class="ct">Хранение</div><div id="cAcc"></div></div>
       </div>
     </div>
     <div class="grid2">
@@ -296,9 +292,9 @@ const DEFAULT_IPS=[
 ];
 
 const DEFAULT_CONST={
-  log_l1:32, log_l2:28, log_l3:14, log_coef:1.70,
-  prep_fbw:0, prep_fbs_sc:0, prep_fbs_pvz:10,
-  move:0, store_per_l:0.14, store_days:0,
+  log_fbw_l1:32, log_fbw_l2:28, log_fbw_l3:14, log_fbw_coef:1.70,
+  log_fbs_l1:32, log_fbs_l2:28, log_fbs_l3:14, log_fbs_coef:1.70,
+  store_per_l:0.14, store_days:0,
   acquiring:2.5, wallet:3,
   comm_def_fbw:40, comm_def_fbs:44,
   outsource:30, fixed:15,
@@ -306,7 +302,7 @@ const DEFAULT_CONST={
   ad_bid:400, ad_ctr:17, ad_cr:9,
   tax:6, vat:5   /* перезаписываются из активного ИП */
 };
-const DEFAULT_STATE={ ip:'ИП1', art:'', pred:'', scheme:'FBW', hand:'СЦ', fbsTime:'t13',
+const DEFAULT_STATE={ ip:'ИП1', art:'', pred:'', note:'', scheme:'FBW', hand:'СЦ', fbsTime:'t13',
   price:1199, disc:4, spp:33, cogs:0, vol:0, buyM:75, bid:400, ctr:17, cr:9 };
 const DEFAULT_COMM=[
   {pred:'Термоноски',fbw:39.5,fbs:44},{pred:'Термокомплекты',fbw:34.5,fbs:39},
@@ -323,8 +319,8 @@ let ARTS=[], S={...DEFAULT_STATE}, REG=[], ONLINE=false, curTab='calc';
 const $=id=>document.getElementById(id);
 const numRu=v=>{const n=parseFloat(String(v==null?'':v).replace(/\u00a0/g,'').replace(/\s/g,'').replace(',','.'));return isFinite(n)?n:0;};
 const num=numRu;
-const money=n=>Math.round(n).toLocaleString('ru-RU')+' ₽';
-const money1=n=>(Math.round(n*10)/10).toLocaleString('ru-RU')+' ₽';
+const money=n=>(Math.round(n).toLocaleString('ru-RU')+' ₽').replace(/\s/g,'\u00a0');
+const money1=n=>((Math.round(n*10)/10).toLocaleString('ru-RU')+' ₽').replace(/\s/g,'\u00a0');
 const pct=n=>(Math.round(n*10)/10).toLocaleString('ru-RU')+' %';
 const norm=s=>String(s==null?'':s).toLowerCase().replace(/\s+/g,'');
 function toast(msg,kind){const t=$('toast');t.textContent=msg;t.className='toast show'+(kind?' '+kind:'');setTimeout(()=>t.className='toast',2400);}
@@ -413,8 +409,18 @@ async function wbFetchPrice(a){
 
 /* ═══════ РАСЧЁТ ═══════ */
 function effBuyout(st){return st.buyM/100;}
-function logisticsForward(vol){return (C.log_l1+C.log_l2*Math.max(0,Math.min(vol-1,1))+C.log_l3*Math.max(0,vol-2))*C.log_coef;}
-function prepCost(st){ if(st.scheme==='FBW')return C.prep_fbw; return st.hand==='ПВЗ'?C.prep_fbs_pvz:C.prep_fbs_sc; }
+function logParams(st){return st.scheme==='FBS'
+  ?{l1:C.log_fbs_l1,l2:C.log_fbs_l2,l3:C.log_fbs_l3,coef:C.log_fbs_coef}
+  :{l1:C.log_fbw_l1,l2:C.log_fbw_l2,l3:C.log_fbw_l3,coef:C.log_fbw_coef};}
+function logDetail(st){
+  const p=logParams(st), v=st.vol;
+  const q1=Math.min(v,1)>0?1:0;                    // первый литр берётся целиком (мин. тариф)
+  const q2=Math.max(0,Math.min(v-1,1));            // доля второго литра
+  const q3=Math.max(0,v-2);                        // остаток
+  const c1=p.l1*(v>0?1:0), c2=p.l2*q2, c3=p.l3*q3; // стоимость по литрам
+  const base=c1+c2+c3, fwd=base*p.coef;
+  return {p,v,q2,q3,c1,c2,c3,base,fwd};
+}
 function commPct(st){
   const rec=COMM.find(c=>norm(c.pred)===norm(st.pred));
   let base=rec?(st.scheme==='FBW'?rec.fbw:rec.fbs):(st.scheme==='FBW'?C.comm_def_fbw:C.comm_def_fbs);
@@ -428,15 +434,15 @@ function compute(st){
   const wallet=priceSPP*(C.wallet/100), priceSite=priceSPP-wallet;
   const acquiring=priceDisc*(C.acquiring/100);
   const comm=commPct(st)/100, commRub=priceDisc*comm, toTransfer=priceDisc-commRub-acquiring;
-  const logFwd=logisticsForward(st.vol), logWithBuyout=b>0?(logFwd+(1-b)*logFwd)/b:logFwd;
-  const prep=prepCost(st), move=C.move, store=C.store_per_l*st.vol*C.store_days;
+  const L=logDetail(st), logFwd=L.fwd, logReturn=(1-b)*logFwd, logWithBuyout=b>0?(logFwd+logReturn)/b:logFwd;
+  const store=C.store_per_l*st.vol*C.store_days;
   const tax=priceDisc*(C.tax/100), vat=priceDisc*(C.vat/100);
-  const profit0=toTransfer-st.cogs-C.outsource-C.fixed-logWithBuyout-prep-move-store-tax-vat;
+  const profit0=toTransfer-st.cogs-C.outsource-C.fixed-logWithBuyout-store-tax-vat;
   const clicks=1000*(st.ctr/100), cpc=clicks>0?st.bid/clicks:0;
   const orders=Math.ceil(clicks*(st.cr/100)), cpo=orders>0?st.bid/orders:0;
   const cps=b>0?cpo/b:cpo, drr=priceSPP>0?cps/priceSPP:0;
   const profit=profit0-cps, marzha=priceSite>0?profit/priceSite:0;
-  return {b,priceDisc,priceSPP,wallet,priceSite,acquiring,comm,commRub,toTransfer,logFwd,logWithBuyout,prep,move,store,tax,vat,profit0,cpc,orders,cpo,cps,drr,profit,marzha};
+  return {b,priceDisc,priceSPP,wallet,priceSite,acquiring,comm,commRub,toTransfer,L,logFwd,logReturn,logWithBuyout,store,tax,vat,profit0,cpc,orders,cpo,cps,drr,profit,marzha};
 }
 function fmt(n){return (Math.round(n*100)/100).toLocaleString('ru-RU');}
 function neg(v){return '<span class="neg">−'+money(Math.abs(v))+'</span>';}
@@ -454,13 +460,24 @@ function calc(){
   $('m_site').textContent=money(r.priceSite);
   $('buyoutNote').innerHTML=`Выкуп (ручной): <b>${pct(S.buyM)}</b>. Комиссия ВБ: <b>${pct(commPct(S))}</b>`
     +(commKnown(S)?'':' <span style="color:var(--amber)">(предмет не в таблице — дефолт)</span>')+`. Налог ${S.ip}: <b>${fmt(C.tax)}%</b>${C.vat?' + НДС '+fmt(C.vat)+'%':''}.`;
-  const b=r.b;
+  const b=r.b, L=r.L;
+  const logRows=[
+    ['h','Логистика ('+S.scheme+')',''+fmt(S.vol)+' л',''],
+    ['','1-й литр',neg(L.c1),'Тариф 1-го литра ('+fmt(L.p.l1)+' ₽), берётся целиком как минимальный.'],
+  ];
+  if(L.c2>0)logRows.push(['','2-й литр × '+fmt(L.q2),neg(L.c2),fmt(L.p.l2)+' ₽ × доля 2-го литра ('+fmt(L.q2)+').']);
+  if(L.c3>0)logRows.push(['','3-й+ ('+fmt(L.q3)+' л)',neg(L.c3),fmt(L.p.l3)+' ₽ × литры свыше 2 ('+fmt(L.q3)+').']);
+  logRows.push(['','База логистики',money1(L.base),'Сумма по литрам: '+money1(L.c1)+(L.c2>0?' + '+money1(L.c2):'')+(L.c3>0?' + '+money1(L.c3):'')+'.']);
+  logRows.push(['','× коэф. склада '+fmt(L.p.coef),money1(L.fwd),'База × коэффициент склада = логистика вперёд.']);
+  logRows.push(['','Возврат (1−выкуп)',neg(r.logReturn),'Логистика вперёд × (1 − выкуп '+pct(b*100)+'). Возврат «как логистика».']);
+  logRows.push(['tot','Логистика с выкупом',neg(r.logWithBuyout),'(вперёд + возврат) ÷ выкуп '+pct(b*100)+' — на 1 выкупленный заказ.']);
+
   const rows=[
     ['h','Выручка','',''],
-    ['','Цена продавца',money(S.price),'Исходная цена до скидок — вводится вручную.'],
+    ['','Цена продавца',money(S.price),'Исходная цена до скидок.'],
     ['','− скидка '+fmt(S.disc)+'%',neg(S.price*S.disc/100),'Цена продавца × '+fmt(S.disc)+'%.'],
     ['','Цена со скидкой',money(r.priceDisc),'Цена продавца × (1 − скидка). База для комиссии и налогов.'],
-    ['','− СПП '+fmt(S.spp)+'%',neg(r.priceDisc*S.spp/100),'Скидка постоянного покупателя от ВБ: Цена со скидкой × '+fmt(S.spp)+'%.'],
+    ['','− СПП '+fmt(S.spp)+'%',neg(r.priceDisc*S.spp/100),'Цена со скидкой × '+fmt(S.spp)+'%.'],
     ['','Цена с СПП',money(r.priceSPP),'Цена со скидкой × (1 − СПП). База для ДРР.'],
     ['','− WB-кошелёк '+fmt(C.wallet)+'%',neg(r.wallet),'Цена с СПП × '+fmt(C.wallet)+'%.'],
     ['tot','Цена на сайте',money(r.priceSite),'Цена с СПП − WB-кошелёк. То, что видит покупатель.'],
@@ -468,49 +485,25 @@ function calc(){
     ['','Комиссия ВБ '+fmt(commPct(S))+'%',neg(r.commRub),'Цена со скидкой × комиссия предмета'+(S.scheme==='FBS'?' (минус бонус за время сдачи).':'.')],
     ['','Эквайринг '+fmt(C.acquiring)+'%',neg(r.acquiring),'Цена со скидкой × '+fmt(C.acquiring)+'%.'],
     ['tot','Цена к перечислению',money(r.toTransfer),'Цена со скидкой − комиссия − эквайринг.'],
-    ['h','Расходы','',''],
-    ['','Себестоимость (Расход-ШТ)',neg(S.cogs),'Из листа «Экон», колонка Расход-ШТ по этому артикулу.'],
-    ['','Логистика с выкупом',neg(r.logWithBuyout),'(Логистика + (1−выкуп)×возврат) ÷ выкуп. Логистика вперёд = '+money1(r.logFwd)+', выкуп '+pct(b*100)+'.'],
-    ['','Приёмка / подготовка',neg(r.prep),S.scheme==='FBW'?'Подготовка FBW (константа).':'Приёмка FBS для сдачи в '+S.hand+' (константа).'],
-    ['','Перемещение',neg(r.move),'Перемещение до места хранения (константа, 0 до 29.09).'],
-    ['','Хранение ('+fmt(C.store_days)+' дн.)',neg(r.store),fmt(C.store_per_l)+' ₽/л × '+fmt(S.vol)+' л × '+fmt(C.store_days)+' дн.'],
+    ...logRows,
+    ['h','Прочие расходы','',''],
+    ['','Себестоимость (Расход-ШТ)',neg(S.cogs),'Из листа «Экон», колонка Расход-ШТ.'],
+    ...(r.store>0?[['','Хранение ('+fmt(C.store_days)+' дн.)',neg(r.store),fmt(C.store_per_l)+' ₽/л × '+fmt(S.vol)+' л × '+fmt(C.store_days)+' дн.']]:[]),
     ['','Аутсорсинг',neg(C.outsource),'Фикс на единицу (константа).'],
     ['','Постоянные',neg(C.fixed),'Прочие постоянные на единицу (константа).'],
     ['','Налог '+fmt(C.tax)+'%',neg(r.tax),'Цена со скидкой × '+fmt(C.tax)+'% (налог '+S.ip+').'],
-    ['','НДС '+fmt(C.vat)+'%',neg(r.vat),'Цена со скидкой × '+fmt(C.vat)+'%.'],
+    ...(C.vat>0?[['','НДС '+fmt(C.vat)+'%',neg(r.vat),'Цена со скидкой × '+fmt(C.vat)+'%.']]:[]),
     ['tot','Прибыль до рекламы',money(r.profit0),'Цена к перечислению минус все расходы выше.'],
     ['h','Реклама','',''],
-    ['','Заказов с 1000 показов',fmt(r.orders)+' шт','1000 × CTR × CR, округление вверх. CTR '+fmt(S.ctr)+'%, CR '+fmt(S.cr)+'%.'],
+    ['','Заказов с 1000 показов',fmt(r.orders)+' шт','1000 × CTR × CR, округление вверх.'],
     ['','CPO',money1(r.cpo),'Ставка за 1000 показов ÷ число заказов.'],
-    ['','Реклама на выкуп (CPS)',neg(r.cps),'CPO ÷ выкуп ('+pct(b*100)+') — реклама в пересчёте на выкупленный заказ.'],
+    ['','Реклама на выкуп (CPS)',neg(r.cps),'CPO ÷ выкуп ('+pct(b*100)+').'],
     ['','ДРР',pct(r.drr*100),'CPS ÷ Цена с СПП.'],
     ['tot g','Прибыль с продажи',money(r.profit),'Прибыль до рекламы − CPS.'],
     ['tot','Маржинальность',pct(r.marzha*100),'Прибыль с продажи ÷ Цена на сайте.']
   ];
   $('brk').innerHTML=rows.map(([cls,l,v,tip])=>`<tr class="${cls}"${tip?' title="'+tip.replace(/"/g,'&quot;')+'"':''}><td>${l}</td><td>${v}</td></tr>`).join('');
   $('brkMode').textContent=S.ip+' · '+S.scheme+(S.scheme==='FBS'?' · сдача в '+S.hand:'');
-  renderCmp();
-}
-function renderCmp(){
-  const f=compute({...S,scheme:'FBW'}), s=compute({...S,scheme:'FBS'});
-  const better=(a,bv,hi)=>hi?(a>bv?0:1):(a<bv?0:1);   // индекс лучшего
-  const gr='color:var(--green);font-weight:700', dim='color:var(--ink3)';
-  const line=(label,fv,sv,fRaw,sRaw,hi)=>{
-    const win=better(fRaw,sRaw,hi);
-    return `<tr><td>${label}</td>
-      <td style="${win===0?gr:''}">${fv}</td>
-      <td style="${win===1?gr:''}">${sv}</td></tr>`;
-  };
-  $('cmp').innerHTML=`<table class="ktbl"><thead><tr><th>Показатель</th><th>FBW</th><th>FBS${S.scheme==='FBS'?' · '+S.hand:''}</th></tr></thead><tbody>
-    ${line('Комиссия ВБ, %',fmt(commPct({...S,scheme:'FBW'}))+'%',fmt(commPct({...S,scheme:'FBS'}))+'%',commPct({...S,scheme:'FBW'}),commPct({...S,scheme:'FBS'}),false)}
-    ${line('Комиссия, ₽',money(f.commRub),money(s.commRub),f.commRub,s.commRub,false)}
-    ${line('Логистика с выкупом',money1(f.logWithBuyout),money1(s.logWithBuyout),f.logWithBuyout,s.logWithBuyout,false)}
-    ${line('Приёмка / подготовка',money(f.prep),money(s.prep),f.prep,s.prep,false)}
-    ${line('Прибыль до рекламы',money(f.profit0),money(s.profit0),f.profit0,s.profit0,true)}
-    ${line('Прибыль с продажи',money(f.profit),money(s.profit),f.profit,s.profit,true)}
-    ${line('Маржинальность',pct(f.marzha*100),pct(s.marzha*100),f.marzha,s.marzha,true)}
-  </tbody></table>
-  <div class="sub" style="margin-top:8px">Зелёным — что выгоднее по строке. FBS считается для текущего времени сдачи «${({t13:'до 13ч',t42:'13–42ч',none:'после 42ч'})[S.fbsTime]}».</div>`;
 }
 
 /* ═══════ ПОЛЯ ═══════ */
@@ -518,13 +511,13 @@ function readInputs(){
   S.price=num($('i_price').value);S.disc=num($('i_disc').value);S.spp=num($('i_spp').value);
   S.cogs=num($('i_cogs').value);S.vol=num($('i_vol').value);S.buyM=num($('i_buyM').value);
   S.bid=num($('i_bid').value);S.ctr=num($('i_ctr').value);S.cr=num($('i_cr').value);
-  S.pred=$('i_pred').value;S.fbsTime=$('i_fbsTime').value;S.art=$('i_art').value;
+  S.pred=$('i_pred').value;S.fbsTime=$('i_fbsTime').value;S.art=$('i_art').value;S.note=$('i_note').value;
 }
 function writeInputs(){
   $('i_price').value=S.price;$('i_disc').value=S.disc;$('i_spp').value=S.spp;
   $('i_cogs').value=S.cogs;$('i_vol').value=S.vol;$('i_buyM').value=S.buyM;
   $('i_bid').value=S.bid;$('i_ctr').value=S.ctr;$('i_cr').value=S.cr;
-  $('i_fbsTime').value=S.fbsTime;$('i_pred').value=S.pred;$('i_art').value=S.art;
+  $('i_fbsTime').value=S.fbsTime;$('i_pred').value=S.pred;$('i_art').value=S.art;$('i_note').value=S.note||'';
   fillArtList();fillPredList();fillIpSelect();
   segSet('seg_scheme',S.scheme==='FBW'?0:1);segSet('seg_hand',S.hand==='СЦ'?0:1);
   $('fbsTimeWrap').style.display=S.scheme==='FBS'?'':'none';
@@ -568,8 +561,9 @@ async function switchIp(){
 
 /* ═══════ КОНСТАНТЫ UI ═══════ */
 const CDEF={
-  cLog:[['log_l1','1-й литр, ₽'],['log_l2','2-й литр, ₽'],['log_l3','3-й и далее литр, ₽'],['log_coef','Коэф. склада (×)']],
-  cAcc:[['prep_fbw','Подготовка FBW, ₽'],['prep_fbs_sc','Приёмка FBS · СЦ, ₽'],['prep_fbs_pvz','Приёмка FBS · ПВЗ, ₽'],['move','Перемещение, ₽/ед'],['store_per_l','Хранение, ₽/литр/день'],['store_days','Дней хранения']],
+  cLog:[['log_fbw_l1','FBW · 1-й литр, ₽'],['log_fbw_l2','FBW · 2-й литр, ₽'],['log_fbw_l3','FBW · 3-й+ литр, ₽'],['log_fbw_coef','FBW · коэф. склада (×)'],
+        ['log_fbs_l1','FBS · 1-й литр, ₽'],['log_fbs_l2','FBS · 2-й литр, ₽'],['log_fbs_l3','FBS · 3-й+ литр, ₽'],['log_fbs_coef','FBS · коэф. склада (×)']],
+  cAcc:[['store_per_l','Хранение, ₽/литр/день'],['store_days','Дней хранения']],
   cFin:[['acquiring','Эквайринг, %'],['wallet','WB-кошелёк, %'],['comm_def_fbw','Комиссия по умолч. FBW, %'],['comm_def_fbs','Комиссия по умолч. FBS, %'],['fbs_t13','FBS бонус до 13ч, п.%'],['fbs_t42','FBS бонус 13–42ч, п.%']],
   cFix:[['outsource','Аутсорсинг, ₽/ед'],['fixed','Постоянные, ₽/ед'],['ad_bid','Реклама · ставка/1000, ₽'],['ad_ctr','Реклама · CTR, %'],['ad_cr','Реклама · CR, %']]
 };
@@ -611,11 +605,11 @@ function renderReg(){
     const mc=rs.marzha>=0.2?'var(--green)':(rs.marzha>=0?'var(--amber)':'var(--red)');
     const dt=e.savedAt?new Date(e.savedAt).toLocaleString('ru-RU'):'';
     return `<tr style="cursor:pointer" onclick="loadEntry('${e.id.replace(/'/g,"\\'")}')">
-      <td>${st.ip||''}</td><td>${st.art||'—'}</td><td>${st.pred||'—'}</td><td>${st.scheme||''}${st.scheme==='FBS'?'·'+(st.hand||''):''}</td>
+      <td>${st.ip||''}</td><td>${st.art||'—'}</td><td>${st.note||'—'}</td><td>${st.pred||'—'}</td><td>${st.scheme||''}${st.scheme==='FBS'?'·'+(st.hand||''):''}</td>
       <td style="text-align:right;color:${mc};font-weight:700">${m}</td><td style="text-align:right">${pr}</td>
       <td style="text-align:right;color:var(--ink3)">${dt}</td>
       <td style="text-align:right"><button class="b" style="padding:3px 8px" onclick="event.stopPropagation();delEntry('${e.id.replace(/'/g,"\\'")}')">✕</button></td></tr>`;
-  }).join(''):'<tr><td colspan="8" style="text-align:center;color:var(--ink3);padding:20px">пока нет сохранённых расчётов</td></tr>';
+  }).join(''):'<tr><td colspan="9" style="text-align:center;color:var(--ink3);padding:20px">пока нет сохранённых расчётов</td></tr>';
 }
 async function loadEntry(id){
   const e=REG.find(x=>x.id===id); if(!e)return;
@@ -631,60 +625,54 @@ async function delEntry(id){
   catch(e){toast('Ошибка: '+e.message,'err');}
 }
 
-/* ═══════ ТАБЛИЦА (МАТРИЦА) ═══════ */
-let MSCHEME='FBW', mReady=false;
+/* ═══════ ТАБЛИЦА (из реестра) ═══════ */
+let MSCHEME='FBW', MIP='', mReady=false;
 const MCOLS=[
-  ['art','Артикул'],['pred','Предмет'],['vol','Объём, л'],['cogs','Себест.'],['price','Цена'],['disc','Скидка %'],
-  ['site','Цена на сайте'],['commP','Комиссия %'],['commR','Комиссия ₽'],['log','Логистика'],['prep','Приёмка'],
+  ['art','Артикул'],['note','Примечание'],['ip','ИП'],['pred','Предмет'],['vol','Объём, л'],['cogs','Себест.'],['price','Цена'],['disc','Скидка %'],
+  ['site','Цена на сайте'],['commP','Комиссия %'],['commR','Комиссия ₽'],['log','Логистика'],
   ['tax','Налог'],['profit0','Приб. до рекл.'],['cps','Реклама'],['profit','Прибыль'],['marzha','Маржа %']
 ];
 function matrixInit(){
   if(mReady)return; mReady=true;
-  $('m_price').value=S.price;$('m_disc').value=S.disc;$('m_spp').value=S.spp;$('m_buy').value=S.buyM;
   setMScheme(S.scheme);
+  // кнопки ИП
+  const ips=['',...CFG.ips.map(p=>p.name)];
+  $('seg_mip').innerHTML=ips.map((n,i)=>`<button class="${i===0?'on':''}" onclick="setMIp('${n}')">${n||'все ИП'}</button>`).join('');
 }
 function setMScheme(v){MSCHEME=v;$('seg_mscheme').querySelectorAll('button').forEach((b,j)=>b.classList.toggle('on',j===(v==='FBW'?0:1)));renderMatrix();}
+function setMIp(v){MIP=v;$('seg_mip').querySelectorAll('button').forEach(b=>b.classList.toggle('on',(b.textContent==='все ИП'?'':b.textContent)===v));renderMatrix();}
 function matrixRows(){
-  const base={...S,scheme:MSCHEME,disc:num($('m_disc').value),spp:num($('m_spp').value),buyM:num($('m_buy').value)};
-  const defPrice=num($('m_price').value);
-  return ARTS.map(a=>{
-    const st={...base,art:a.art,pred:a.pred,vol:a.vol,cogs:a.cogs,price:a.price>0?a.price:defPrice};
+  return REG.filter(e=>e.state&&e.state.scheme===MSCHEME&&(!MIP||e.state.ip===MIP)).map(e=>{
+    const st={...DEFAULT_STATE,...e.state};
     const r=compute(st);
-    return {art:a.art,pred:a.pred,vol:a.vol,cogs:a.cogs,price:st.price,disc:st.disc,
-      site:r.priceSite,commP:commPct(st),commR:r.commRub,log:r.logWithBuyout,prep:r.prep,tax:r.tax,
-      profit0:r.profit0,cps:r.cps,profit:r.profit,marzha:r.marzha*100};
-  });
+    return {id:e.id,art:st.art,note:st.note||'',ip:st.ip,pred:st.pred,vol:st.vol,cogs:st.cogs,price:st.price,disc:st.disc,
+      site:r.priceSite,commP:commPct(st),commR:r.commRub,log:r.logWithBuyout,tax:r.tax,
+      profit0:r.profit0,cps:r.cps,profit:r.profit,marzha:r.marzha*100,savedAt:e.savedAt};
+  }).sort((a,b)=>b.marzha-a.marzha);
 }
 function renderMatrix(){
-  if(!ARTS.length){$('matrixTbl').innerHTML='<tr><td>нет данных</td></tr>';return;}
   const q=(($('mSrch')||{}).value||'').toLowerCase();
-  let rows=matrixRows().filter(r=>!q||(r.art+' '+r.pred).toLowerCase().includes(q));
-  rows.sort((a,b)=>b.marzha-a.marzha);
+  let rows=matrixRows().filter(r=>!q||((r.art||'')+' '+(r.note||'')+' '+(r.pred||'')).toLowerCase().includes(q));
+  if(!rows.length){$('matrixTbl').innerHTML='<tr><td style="padding:20px;color:var(--ink3)">Нет сохранённых расчётов по схеме '+MSCHEME+'. Посчитай в калькуляторе и нажми «Сохранить в реестр».</td></tr>';return;}
   const head='<thead><tr>'+MCOLS.map(c=>`<th>${c[1]}</th>`).join('')+'</tr></thead>';
   const fmtCell=(k,v)=>{
-    if(k==='art')return v; if(k==='pred')return v||'—';
-    if(k==='vol')return v||'—'; if(k==='disc')return fmt(v)+'';
-    if(k==='commP')return fmt(v)+''; if(k==='marzha'){const c=v>=20?'var(--green)':(v>=0?'var(--amber)':'var(--red)');return `<b style="color:${c}">${fmt(v)}</b>`;}
+    if(k==='art'||k==='note'||k==='pred'||k==='ip')return v||'—';
+    if(k==='vol')return v||'—'; if(k==='disc'||k==='commP')return fmt(v);
+    if(k==='marzha'){const c=v>=20?'var(--green)':(v>=0?'var(--amber)':'var(--red)');return `<b style="color:${c}">${fmt(v)}</b>`;}
     if(k==='profit'||k==='profit0')return `<span style="color:${v>=0?'var(--green)':'var(--red)'}">${money(v)}</span>`;
     return money(v);
   };
-  const body='<tbody>'+rows.map(r=>'<tr onclick="matrixOpen(\''+r.art.replace(/'/g,"\\'")+'\')" style="cursor:pointer">'+MCOLS.map(c=>{
-    const al=(c[0]==='art'||c[0]==='pred')?'left':'right';
+  const body='<tbody>'+rows.map(r=>'<tr onclick="loadEntry(\''+r.id.replace(/'/g,"\\'")+'\')" style="cursor:pointer">'+MCOLS.map(c=>{
+    const al=(['art','note','pred','ip'].includes(c[0]))?'left':'right';
     return `<td style="text-align:${al}">${fmtCell(c[0],r[c[0]])}</td>`;}).join('')+'</tr>').join('')+'</tbody>';
   $('matrixTbl').innerHTML=head+body;
-}
-function matrixOpen(art){
-  const a=ARTS.find(x=>x.art===art); if(!a)return;
-  S={...S,scheme:MSCHEME,art:a.art,pred:a.pred,vol:a.vol,cogs:a.cogs,
-     price:a.price>0?a.price:num($('m_price').value),disc:num($('m_disc').value),spp:num($('m_spp').value),buyM:num($('m_buy').value)};
-  writeInputs();tab('calc');calc();
 }
 function exportMatrix(){
   const rows=matrixRows();
   const head=MCOLS.map(c=>c[1]).join(';');
-  const body=rows.map(r=>MCOLS.map(c=>{let v=r[c[0]];if(typeof v==='number')v=Math.round(v*100)/100;return String(v).replace('.',',');}).join(';')).join('\n');
+  const body=rows.map(r=>MCOLS.map(c=>{let v=r[c[0]];if(typeof v==='number')v=Math.round(v*100)/100;return String(v==null?'':v).replace('.',',');}).join(';')).join('\n');
   const blob=new Blob(['\ufeff'+head+'\n'+body],{type:'text/csv;charset=utf-8'});
-  const u=URL.createObjectURL(blob),a=document.createElement('a');a.href=u;a.download='calc_'+S.ip+'_'+MSCHEME+'.csv';a.click();URL.revokeObjectURL(u);
+  const u=URL.createObjectURL(blob),a=document.createElement('a');a.href=u;a.download='calc_'+MSCHEME+(MIP?'_'+MIP:'')+'.csv';a.click();URL.revokeObjectURL(u);
 }
 
 /* ═══════ ВКЛАДКИ ═══════ */
@@ -752,7 +740,7 @@ async function saveState(){
   const btn=event&&event.target;if(btn)btn.disabled=true;
   try{
     const r=compute(S);
-    const id=S.ip+'|'+(S.art||'без артикула')+'|'+S.scheme;
+    const id=S.ip+'|'+(S.art||'без артикула')+'|'+S.scheme+(S.note?'|'+S.note:'');
     const result={marzha:r.marzha,profit:r.profit,drr:r.drr};
     await apiPost({action:'saveState',id,state:{...S},result});
     const savedAt=new Date().toISOString();
