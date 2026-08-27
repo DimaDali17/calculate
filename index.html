@@ -54,6 +54,8 @@ table{width:100%;border-collapse:collapse}
 .brk td:last-child{text-align:right;font-variant-numeric:tabular-nums;font-weight:600;white-space:nowrap}
 .brk tr.g td{color:var(--green)}
 .brk tr.h td{font-weight:700;background:var(--bg3);text-transform:uppercase;font-size:9px;letter-spacing:.08em;color:var(--ink3);border-bottom:1px solid var(--border2)}
+.brk tr.sub td{color:var(--ink3);font-size:11px;padding-top:2px;border-bottom:1px dashed var(--border)}
+.brk tr.sub td:first-child{padding-left:14px}
 .brk tr.tot td{font-weight:700;background:var(--bg2);border-top:1px solid var(--border2)}
 .brk td .neg{color:var(--red)}
 .ktbl{width:100%;border-collapse:collapse;font-size:12px}
@@ -271,7 +273,7 @@ table{width:100%;border-collapse:collapse}
     <div class="fld"><label>Ключ доступа</label><input id="set_key" placeholder="общий пароль команды (как в Apps Script)"></div>
     <div class="fld"><label style="display:flex;align-items:center;gap:8px;text-transform:none;font-weight:600"><input type="checkbox" id="set_wb" style="width:auto"> Тянуть цену и скидку из WB API (нужен токен «Цены и скидки» в worker.js)</label></div>
     <div id="ipEditor"></div>
-    <div class="rr"><button class="b" onclick="testConn()">Проверить связь</button><button class="b" onclick="closeSettings()">Отмена</button><button class="b pri" onclick="saveSettings()">Сохранить и загрузить</button></div>
+    <div class="rr"><button class="b" onclick="testConn()">Тест записи</button><button class="b" onclick="closeSettings()">Отмена</button><button class="b pri" onclick="saveSettings()">Сохранить и загрузить</button></div>
   </div>
 </div>
 
@@ -287,8 +289,8 @@ const IP2_ARTS='https://docs.google.com/spreadsheets/d/e/2PACX-1vS4upRNoJpKgaECl
 const IP1_ECON='https://docs.google.com/spreadsheets/d/e/2PACX-1vRd-F9AS2AOqG3-_39PX6jHwU-5fYDYuojWhuz07tZM7qkIxxCZriy-fQiqxmwYPFm3Za82g-dU1T7B/pub?gid=1189729527&single=true&output=csv';
 const IP2_ECON='https://docs.google.com/spreadsheets/d/e/2PACX-1vQuVvUEHyqdVP2ZHULOoeNyKdJrnI5qHcp8EI9uEns-xFfRaH_OifbV4yZEqeS_1a7CBVKMQ2TYi9pp/pub?gid=1189729527&single=true&output=csv';
 const DEFAULT_IPS=[
-  {name:'ИП1', arts:IP1_ARTS, econ:IP1_ECON, tax:6, vat:5},
-  {name:'ИП2', arts:IP2_ARTS, econ:IP2_ECON, tax:6, vat:0}   /* налог ИП2 — поставь свой в настройках */
+  {name:'ИП1', arts:IP1_ARTS, econ:IP1_ECON, tax:7, vat:5},
+  {name:'ИП2', arts:IP2_ARTS, econ:IP2_ECON, tax:7, vat:0}
 ];
 
 const DEFAULT_CONST={
@@ -432,22 +434,20 @@ function compute(st){
   const b=effBuyout(st);
   const priceDisc=st.price*(1-st.disc/100), priceSPP=priceDisc*(1-st.spp/100);
   const wallet=priceSPP*(C.wallet/100), priceSite=priceSPP-wallet;
-  const acquiring=priceSite*(C.acquiring/100);
-  const comm=commPct(st)/100;
-  const commRub=st.price*comm;
-  // СПП перекрывает часть КВВ: реальная комиссия = КВВ − СПП.
-  const realCommPct=Math.max(0,commPct(st)-st.spp);
-  const realCommRub=st.price*(realCommPct/100);
-  const toTransfer=priceSite-realCommRub-acquiring;
+  const acquiring=priceDisc*(C.acquiring/100);
+  const commNomPct=commPct(st), commRealPct=Math.max(0,commNomPct-st.spp);
+  const commNomRub=st.price*(commNomPct/100);          // КВВ номинал (справочно)
+  const commRub=st.price*(commRealPct/100);            // реальная комиссия (КВВ − СПП) — фактическое удержание
+  const toTransfer=priceDisc-commRub-acquiring;
   const L=logDetail(st), logFwd=L.fwd, logReturn=(1-b)*logFwd, logWithBuyout=b>0?(logFwd+logReturn)/b:logFwd;
   const store=C.store_per_l*st.vol*C.store_days;
-  const tax=priceSite*(C.tax/100), vat=priceSite*(C.vat/100);
+  const tax=priceSite*(C.tax/100), vat=priceSite*(C.vat/100);   // налог и НДС — от цены на сайте
   const profit0=toTransfer-st.cogs-C.outsource-C.fixed-logWithBuyout-store-tax-vat;
   const clicks=1000*(st.ctr/100), cpc=clicks>0?st.bid/clicks:0;
   const orders=Math.ceil(clicks*(st.cr/100)), cpo=orders>0?st.bid/orders:0;
   const cps=b>0?cpo/b:cpo, drr=priceSPP>0?cps/priceSPP:0;
   const profit=profit0-cps, marzha=priceSite>0?profit/priceSite:0;
-  return {b,priceDisc,priceSPP,wallet,priceSite,acquiring,comm,commRub,realCommPct,realCommRub,toTransfer,L,logFwd,logReturn,logWithBuyout,store,tax,vat,profit0,cpc,orders,cpo,cps,drr,profit,marzha};
+  return {b,priceDisc,priceSPP,wallet,priceSite,acquiring,commNomPct,commRealPct,commNomRub,commRub,toTransfer,L,logFwd,logReturn,logWithBuyout,store,tax,vat,profit0,cpc,orders,cpo,cps,drr,profit,marzha};
 }
 function fmt(n){return (Math.round(n*100)/100).toLocaleString('ru-RU');}
 function neg(v){return '<span class="neg">−'+money(Math.abs(v))+'</span>';}
@@ -463,42 +463,44 @@ function calc(){
   $('m_log').textContent=money1(r.logWithBuyout);
   $('m_log_d').innerHTML='без возврата <b>'+money1(r.logFwd)+'</b>';
   $('m_site').textContent=money(r.priceSite);
-  $('buyoutNote').innerHTML=`Выкуп (ручной): <b>${pct(S.buyM)}</b>. КВВ: <b>${pct(commPct(S))}</b> · Реальная комиссия: <b>${pct(r.realCommPct)}</b>`
-    +(commKnown(S)?'':' <span style="color:var(--amber)">(предмет не в таблице — дефолт)</span>')+`. Налог ${S.ip}: <b>${fmt(C.tax)}%</b>${C.vat?' + НДС '+fmt(C.vat)+'%':''}.`;
+  $('buyoutNote').innerHTML=`Выкуп (ручной): <b>${pct(S.buyM)}</b>. КВВ: <b>${pct(commPct(S))}</b>`
+    +(commKnown(S)?'':' <span style="color:var(--amber)">(предмет не в таблице — дефолт)</span>')+` → реальная (−СПП ${fmt(S.spp)}%): <b>${pct(Math.max(0,commPct(S)-S.spp))}</b>. Налог ${S.ip}: <b>${fmt(C.tax)}%</b>${C.vat?' + НДС '+fmt(C.vat)+'%':''} — от цены на сайте.`;
   const b=r.b, L=r.L;
+  const perSale=b>0?1/b:1, fwdPerSale=L.fwd*perSale, retPerSale=r.logWithBuyout-fwdPerSale;
   const logRows=[
-    ['h','Логистика ('+S.scheme+')',''+fmt(S.vol)+' л',''],
-    ['','1-й литр',neg(L.c1),'Тариф 1-го литра ('+fmt(L.p.l1)+' ₽), берётся целиком как минимальный.'],
+    ['h','Логистика ('+S.scheme+')',fmt(S.vol)+' л',''],
+    ['','1-й литр',neg(L.c1),'Тариф 1-го литра '+fmt(L.p.l1)+' ₽ (мин. за отправку).'],
   ];
-  if(L.c2>0)logRows.push(['','2-й литр × '+fmt(L.q2),neg(L.c2),fmt(L.p.l2)+' ₽ × доля 2-го литра ('+fmt(L.q2)+').']);
-  if(L.c3>0)logRows.push(['','3-й+ ('+fmt(L.q3)+' л)',neg(L.c3),fmt(L.p.l3)+' ₽ × литры свыше 2 ('+fmt(L.q3)+').']);
-  logRows.push(['','База логистики',money1(L.base),'Сумма по литрам: '+money1(L.c1)+(L.c2>0?' + '+money1(L.c2):'')+(L.c3>0?' + '+money1(L.c3):'')+'.']);
-  logRows.push(['','× коэф. склада '+fmt(L.p.coef),money1(L.fwd),'База × коэффициент склада = логистика вперёд.']);
-  logRows.push(['','Возврат (1−выкуп)',neg(r.logReturn),'Логистика вперёд × (1 − выкуп '+pct(b*100)+'). Возврат «как логистика».']);
-  logRows.push(['tot','Логистика с выкупом',neg(r.logWithBuyout),'(вперёд + возврат) ÷ выкуп '+pct(b*100)+' — на 1 выкупленный заказ.']);
+  if(L.c2>0)logRows.push(['','2-й литр × '+fmt(L.q2),neg(L.c2),fmt(L.p.l2)+' ₽ × доля 2-го литра.']);
+  if(L.c3>0)logRows.push(['','3-й+ ('+fmt(L.q3)+' л)',neg(L.c3),fmt(L.p.l3)+' ₽ × литры свыше 2.']);
+  logRows.push(['','× коэф. склада '+fmt(L.p.coef),money1(L.fwd),'(сумма по литрам '+money1(L.base)+') × коэффициент = логистика вперёд за 1 отправку.']);
+  logRows.push(['','Отправок на 1 выкуп',fmt(perSale)+' шт','1 ÷ выкуп ('+pct(b*100)+'). Чтобы продать 1 раз, товар едет к клиенту в среднем столько раз.']);
+  logRows.push(['','Логистика вперёд на выкуп',neg(fwdPerSale),money1(L.fwd)+' × '+fmt(perSale)+' отправок.']);
+  logRows.push(['','Возвраты на выкуп',neg(retPerSale),'Несостоявшиеся отправки ('+fmt(perSale-1)+' шт) × возврат «как логистика» ('+money1(L.fwd)+').']);
+  logRows.push(['tot','Логистика с выкупом',neg(r.logWithBuyout),'Вперёд на выкуп + возвраты на выкуп. Выкуп учтён один раз (через число отправок).']);
 
   const rows=[
     ['h','Выручка','',''],
     ['','Цена продавца',money(S.price),'Исходная цена до скидок.'],
     ['','− скидка '+fmt(S.disc)+'%',neg(S.price*S.disc/100),'Цена продавца × '+fmt(S.disc)+'%.'],
-    ['','Цена со скидкой',money(r.priceDisc),'Цена продавца × (1 − скидка). База для комиссии и налогов.'],
-    ['','− СПП '+fmt(S.spp)+'%',neg(r.priceDisc*S.spp/100),'Цена со скидкой × '+fmt(S.spp)+'%.'],
-    ['','Цена с СПП',money(r.priceSPP),'Цена со скидкой × (1 − СПП). База для ДРР.'],
+    ['','Цена со скидкой',money(r.priceDisc),'Цена продавца × (1 − скидка). База комиссии и эквайринга.'],
+    ['','− СПП '+fmt(S.spp)+'%',neg(r.priceDisc*S.spp/100),'Скидка постоянного покупателя (от ВБ): Цена со скидкой × '+fmt(S.spp)+'%.'],
+    ['','Цена с СПП',money(r.priceSPP),'Цена со скидкой × (1 − СПП).'],
     ['','− WB-кошелёк '+fmt(C.wallet)+'%',neg(r.wallet),'Цена с СПП × '+fmt(C.wallet)+'%.'],
-    ['tot','Цена на сайте',money(r.priceSite),'Цена с СПП − WB-кошелёк. То, что видит покупатель.'],
+    ['tot','Цена на сайте',money(r.priceSite),'Цена с СПП − WB-кошелёк. То, что реально платит покупатель. База налога.'],
     ['h','Удержания ВБ','',''],
-    ['','Комиссия ВБ '+fmt(commPct(S))+'%',neg(r.commRub),'Цена продавца × комиссия предмета'+(S.scheme==='FBS'?' (минус бонус за время сдачи).':'.')],
-    ['','Реальная комиссия '+fmt(r.realCommPct)+'%',neg(r.realCommRub),'КВВ '+fmt(commPct(S))+'% − СПП '+fmt(S.spp)+'%. СПП перекрывает часть КВВ.'],
-    ['','Эквайринг '+fmt(C.acquiring)+'%',neg(r.acquiring),'Цена на сайте × '+fmt(C.acquiring)+'%.'],
-    ['tot','Цена к перечислению',money(r.toTransfer),'Цена на сайте − реальная комиссия − эквайринг.'],
+    ['','Реальная комиссия '+fmt(r.commRealPct)+'%',neg(r.commRub),'Цена продавца × (КВВ '+fmt(r.commNomPct)+'% − СПП '+fmt(S.spp)+'%). СПП перекрывает часть КВВ. Фактическое удержание комиссии.'],
+    ['sub','↳ КВВ '+fmt(r.commNomPct)+'% номинал = '+money(r.commNomRub),'','Номинальная комиссия ВБ от цены продавца — справочно, не удерживается целиком (перекрывается СПП).'],
+    ['','Эквайринг '+fmt(C.acquiring)+'%',neg(r.acquiring),'Отдельно от комиссии. Цена со скидкой × '+fmt(C.acquiring)+'%.'],
+    ['tot','Цена к перечислению',money(r.toTransfer),'Цена со скидкой − реальная комиссия − эквайринг.'],
     ...logRows,
     ['h','Прочие расходы','',''],
     ['','Себестоимость (Расход-ШТ)',neg(S.cogs),'Из листа «Экон», колонка Расход-ШТ.'],
     ...(r.store>0?[['','Хранение ('+fmt(C.store_days)+' дн.)',neg(r.store),fmt(C.store_per_l)+' ₽/л × '+fmt(S.vol)+' л × '+fmt(C.store_days)+' дн.']]:[]),
     ['','Аутсорсинг',neg(C.outsource),'Фикс на единицу (константа).'],
     ['','Постоянные',neg(C.fixed),'Прочие постоянные на единицу (константа).'],
-    ['','Налог '+fmt(C.tax)+'%',neg(r.tax),'Цена на сайте × '+fmt(C.tax)+'% (налог '+S.ip+').'],
-    ...(C.vat>0?[['','НДС '+fmt(C.vat)+'%',neg(r.vat),'Цена на сайте × '+fmt(C.vat)+'%.']]:[]),
+    ['','Налог '+fmt(C.tax)+'% (от цены на сайте)',neg(r.tax),'Цена на сайте × '+fmt(C.tax)+'% (налог '+S.ip+').'],
+    ...(C.vat>0?[['','НДС '+fmt(C.vat)+'% (от цены на сайте)',neg(r.vat),'Цена на сайте × '+fmt(C.vat)+'%.']]:[]),
     ['tot','Прибыль до рекламы',money(r.profit0),'Цена к перечислению минус все расходы выше.'],
     ['h','Реклама','',''],
     ['','Заказов с 1000 показов',fmt(r.orders)+' шт','1000 × CTR × CR, округление вверх.'],
@@ -635,7 +637,7 @@ async function delEntry(id){
 let MSCHEME='FBW', MIP='', mReady=false;
 const MCOLS=[
   ['art','Артикул'],['note','Примечание'],['ip','ИП'],['pred','Предмет'],['vol','Объём, л'],['cogs','Себест.'],['price','Цена'],['disc','Скидка %'],
-  ['site','Цена на сайте'],['commP','КВВ %'],['commR','КВВ ₽'],['realCommP','Реал. комиссия %'],['realCommR','Реал. комиссия ₽'],['log','Логистика'],
+  ['site','Цена на сайте'],['kvv','КВВ %'],['commP','Реальн. ком. %'],['commR','Реальн. ком. ₽'],['log','Логистика'],
   ['tax','Налог'],['profit0','Приб. до рекл.'],['cps','Реклама'],['profit','Прибыль'],['marzha','Маржа %']
 ];
 function matrixInit(){
@@ -652,7 +654,7 @@ function matrixRows(){
     const st={...DEFAULT_STATE,...e.state};
     const r=compute(st);
     return {id:e.id,art:st.art,note:st.note||'',ip:st.ip,pred:st.pred,vol:st.vol,cogs:st.cogs,price:st.price,disc:st.disc,
-      site:r.priceSite,commP:commPct(st),commR:r.commRub,realCommP:r.realCommPct,realCommR:r.realCommRub,log:r.logWithBuyout,tax:r.tax,
+      site:r.priceSite,kvv:r.commNomPct,commP:r.commRealPct,commR:r.commRub,log:r.logWithBuyout,tax:r.tax,
       profit0:r.profit0,cps:r.cps,profit:r.profit,marzha:r.marzha*100,savedAt:e.savedAt};
   }).sort((a,b)=>b.marzha-a.marzha);
 }
@@ -663,7 +665,7 @@ function renderMatrix(){
   const head='<thead><tr>'+MCOLS.map(c=>`<th>${c[1]}</th>`).join('')+'</tr></thead>';
   const fmtCell=(k,v)=>{
     if(k==='art'||k==='note'||k==='pred'||k==='ip')return v||'—';
-    if(k==='vol')return v||'—'; if(k==='disc'||k==='commP'||k==='realCommP')return fmt(v);
+    if(k==='vol')return v||'—'; if(k==='disc'||k==='commP'||k==='kvv')return fmt(v);
     if(k==='marzha'){const c=v>=20?'var(--green)':(v>=0?'var(--amber)':'var(--red)');return `<b style="color:${c}">${fmt(v)}</b>`;}
     if(k==='profit'||k==='profit0')return `<span style="color:${v>=0?'var(--green)':'var(--red)'}">${money(v)}</span>`;
     return money(v);
@@ -705,10 +707,29 @@ async function apiPost(payload){
   const j=parseJSON(t); if(j.error)throw new Error(j.error); return j;
 }
 async function testConn(){
-  if(!$('set_url').value.trim()){toast('Впиши сначала Воркер URL','err');return;}
-  const old={...CFG};CFG.url=$('set_url').value.trim();CFG.key=$('set_key').value.trim();
-  try{const d=await apiGet('load');toast('Связь есть ✓ записей в реестре: '+((d.registry||[]).length),'ok');}
-  catch(e){alert('Не удалось связаться:\n\n'+e.message);}
+  const url=$('set_url').value.trim(), key=$('set_key').value.trim();
+  if(!url){toast('Впиши сначала Воркер URL','err');return;}
+  const old={...CFG}; CFG.url=url; CFG.key=key;
+  let log='';
+  try{
+    log+='1) читаю load…\n';
+    const d=await apiGet('load');
+    log+='   OK, записей в реестре: '+((d.registry||[]).length)+'\n';
+    log+='2) пишу тестовую запись…\n';
+    const id='__TEST__|'+Date.now();
+    await apiPost({action:'saveState',id,state:{ip:'ТЕСТ',art:'проверка',scheme:'FBW'},result:{marzha:0,profit:0}});
+    log+='   OK, запись отправлена\n';
+    log+='3) читаю обратно…\n';
+    const d2=await apiGet('load');
+    const found=(d2.registry||[]).some(e=>e.id===id);
+    log+=found?'   OK, запись найдена — сохранение РАБОТАЕТ ✓\n':'   ✗ запись НЕ найдена: доступ Apps Script не «Все» или воркер шлёт не туда\n';
+    log+='4) удаляю тестовую запись…\n';
+    await apiPost({action:'delete',id});
+    log+='   OK\n\nИТОГ: '+(found?'сохранение работает.':'сохранение НЕ работает — см. пункт 3.');
+    alert(log); toast(found?'Сохранение работает ✓':'Сохранение не работает',found?'ok':'err');
+  }catch(e){
+    alert(log+'\n✗ ОШИБКА: '+e.message+'\n\nПроверь: 1) в worker.js APPSCRIPT_URL — ссылка /exec (не библиотечная); 2) Apps Script развёрнут как веб-приложение с доступом «Все»; 3) ключ совпадает.');
+  }
   CFG=old;
 }
 
