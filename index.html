@@ -432,17 +432,22 @@ function compute(st){
   const b=effBuyout(st);
   const priceDisc=st.price*(1-st.disc/100), priceSPP=priceDisc*(1-st.spp/100);
   const wallet=priceSPP*(C.wallet/100), priceSite=priceSPP-wallet;
-  const acquiring=priceDisc*(C.acquiring/100);
-  const comm=commPct(st)/100, commRub=priceDisc*comm, toTransfer=priceDisc-commRub-acquiring;
+  const acquiring=priceSite*(C.acquiring/100);
+  const comm=commPct(st)/100;
+  const commRub=st.price*comm;
+  // СПП перекрывает часть КВВ: реальная комиссия = КВВ − СПП.
+  const realCommPct=Math.max(0,commPct(st)-st.spp);
+  const realCommRub=st.price*(realCommPct/100);
+  const toTransfer=priceSite-realCommRub-acquiring;
   const L=logDetail(st), logFwd=L.fwd, logReturn=(1-b)*logFwd, logWithBuyout=b>0?(logFwd+logReturn)/b:logFwd;
   const store=C.store_per_l*st.vol*C.store_days;
-  const tax=priceDisc*(C.tax/100), vat=priceDisc*(C.vat/100);
+  const tax=priceSite*(C.tax/100), vat=priceSite*(C.vat/100);
   const profit0=toTransfer-st.cogs-C.outsource-C.fixed-logWithBuyout-store-tax-vat;
   const clicks=1000*(st.ctr/100), cpc=clicks>0?st.bid/clicks:0;
   const orders=Math.ceil(clicks*(st.cr/100)), cpo=orders>0?st.bid/orders:0;
   const cps=b>0?cpo/b:cpo, drr=priceSPP>0?cps/priceSPP:0;
   const profit=profit0-cps, marzha=priceSite>0?profit/priceSite:0;
-  return {b,priceDisc,priceSPP,wallet,priceSite,acquiring,comm,commRub,toTransfer,L,logFwd,logReturn,logWithBuyout,store,tax,vat,profit0,cpc,orders,cpo,cps,drr,profit,marzha};
+  return {b,priceDisc,priceSPP,wallet,priceSite,acquiring,comm,commRub,realCommPct,realCommRub,toTransfer,L,logFwd,logReturn,logWithBuyout,store,tax,vat,profit0,cpc,orders,cpo,cps,drr,profit,marzha};
 }
 function fmt(n){return (Math.round(n*100)/100).toLocaleString('ru-RU');}
 function neg(v){return '<span class="neg">−'+money(Math.abs(v))+'</span>';}
@@ -458,7 +463,7 @@ function calc(){
   $('m_log').textContent=money1(r.logWithBuyout);
   $('m_log_d').innerHTML='без возврата <b>'+money1(r.logFwd)+'</b>';
   $('m_site').textContent=money(r.priceSite);
-  $('buyoutNote').innerHTML=`Выкуп (ручной): <b>${pct(S.buyM)}</b>. Комиссия ВБ: <b>${pct(commPct(S))}</b>`
+  $('buyoutNote').innerHTML=`Выкуп (ручной): <b>${pct(S.buyM)}</b>. КВВ: <b>${pct(commPct(S))}</b> · Реальная комиссия: <b>${pct(r.realCommPct)}</b>`
     +(commKnown(S)?'':' <span style="color:var(--amber)">(предмет не в таблице — дефолт)</span>')+`. Налог ${S.ip}: <b>${fmt(C.tax)}%</b>${C.vat?' + НДС '+fmt(C.vat)+'%':''}.`;
   const b=r.b, L=r.L;
   const logRows=[
@@ -482,17 +487,18 @@ function calc(){
     ['','− WB-кошелёк '+fmt(C.wallet)+'%',neg(r.wallet),'Цена с СПП × '+fmt(C.wallet)+'%.'],
     ['tot','Цена на сайте',money(r.priceSite),'Цена с СПП − WB-кошелёк. То, что видит покупатель.'],
     ['h','Удержания ВБ','',''],
-    ['','Комиссия ВБ '+fmt(commPct(S))+'%',neg(r.commRub),'Цена со скидкой × комиссия предмета'+(S.scheme==='FBS'?' (минус бонус за время сдачи).':'.')],
-    ['','Эквайринг '+fmt(C.acquiring)+'%',neg(r.acquiring),'Цена со скидкой × '+fmt(C.acquiring)+'%.'],
-    ['tot','Цена к перечислению',money(r.toTransfer),'Цена со скидкой − комиссия − эквайринг.'],
+    ['','Комиссия ВБ '+fmt(commPct(S))+'%',neg(r.commRub),'Цена продавца × комиссия предмета'+(S.scheme==='FBS'?' (минус бонус за время сдачи).':'.')],
+    ['','Реальная комиссия '+fmt(r.realCommPct)+'%',neg(r.realCommRub),'КВВ '+fmt(commPct(S))+'% − СПП '+fmt(S.spp)+'%. СПП перекрывает часть КВВ.'],
+    ['','Эквайринг '+fmt(C.acquiring)+'%',neg(r.acquiring),'Цена на сайте × '+fmt(C.acquiring)+'%.'],
+    ['tot','Цена к перечислению',money(r.toTransfer),'Цена на сайте − реальная комиссия − эквайринг.'],
     ...logRows,
     ['h','Прочие расходы','',''],
     ['','Себестоимость (Расход-ШТ)',neg(S.cogs),'Из листа «Экон», колонка Расход-ШТ.'],
     ...(r.store>0?[['','Хранение ('+fmt(C.store_days)+' дн.)',neg(r.store),fmt(C.store_per_l)+' ₽/л × '+fmt(S.vol)+' л × '+fmt(C.store_days)+' дн.']]:[]),
     ['','Аутсорсинг',neg(C.outsource),'Фикс на единицу (константа).'],
     ['','Постоянные',neg(C.fixed),'Прочие постоянные на единицу (константа).'],
-    ['','Налог '+fmt(C.tax)+'%',neg(r.tax),'Цена со скидкой × '+fmt(C.tax)+'% (налог '+S.ip+').'],
-    ...(C.vat>0?[['','НДС '+fmt(C.vat)+'%',neg(r.vat),'Цена со скидкой × '+fmt(C.vat)+'%.']]:[]),
+    ['','Налог '+fmt(C.tax)+'%',neg(r.tax),'Цена на сайте × '+fmt(C.tax)+'% (налог '+S.ip+').'],
+    ...(C.vat>0?[['','НДС '+fmt(C.vat)+'%',neg(r.vat),'Цена на сайте × '+fmt(C.vat)+'%.']]:[]),
     ['tot','Прибыль до рекламы',money(r.profit0),'Цена к перечислению минус все расходы выше.'],
     ['h','Реклама','',''],
     ['','Заказов с 1000 показов',fmt(r.orders)+' шт','1000 × CTR × CR, округление вверх.'],
@@ -629,7 +635,7 @@ async function delEntry(id){
 let MSCHEME='FBW', MIP='', mReady=false;
 const MCOLS=[
   ['art','Артикул'],['note','Примечание'],['ip','ИП'],['pred','Предмет'],['vol','Объём, л'],['cogs','Себест.'],['price','Цена'],['disc','Скидка %'],
-  ['site','Цена на сайте'],['commP','Комиссия %'],['commR','Комиссия ₽'],['log','Логистика'],
+  ['site','Цена на сайте'],['commP','КВВ %'],['commR','КВВ ₽'],['realCommP','Реал. комиссия %'],['realCommR','Реал. комиссия ₽'],['log','Логистика'],
   ['tax','Налог'],['profit0','Приб. до рекл.'],['cps','Реклама'],['profit','Прибыль'],['marzha','Маржа %']
 ];
 function matrixInit(){
@@ -646,7 +652,7 @@ function matrixRows(){
     const st={...DEFAULT_STATE,...e.state};
     const r=compute(st);
     return {id:e.id,art:st.art,note:st.note||'',ip:st.ip,pred:st.pred,vol:st.vol,cogs:st.cogs,price:st.price,disc:st.disc,
-      site:r.priceSite,commP:commPct(st),commR:r.commRub,log:r.logWithBuyout,tax:r.tax,
+      site:r.priceSite,commP:commPct(st),commR:r.commRub,realCommP:r.realCommPct,realCommR:r.realCommRub,log:r.logWithBuyout,tax:r.tax,
       profit0:r.profit0,cps:r.cps,profit:r.profit,marzha:r.marzha*100,savedAt:e.savedAt};
   }).sort((a,b)=>b.marzha-a.marzha);
 }
@@ -657,7 +663,7 @@ function renderMatrix(){
   const head='<thead><tr>'+MCOLS.map(c=>`<th>${c[1]}</th>`).join('')+'</tr></thead>';
   const fmtCell=(k,v)=>{
     if(k==='art'||k==='note'||k==='pred'||k==='ip')return v||'—';
-    if(k==='vol')return v||'—'; if(k==='disc'||k==='commP')return fmt(v);
+    if(k==='vol')return v||'—'; if(k==='disc'||k==='commP'||k==='realCommP')return fmt(v);
     if(k==='marzha'){const c=v>=20?'var(--green)':(v>=0?'var(--amber)':'var(--red)');return `<b style="color:${c}">${fmt(v)}</b>`;}
     if(k==='profit'||k==='profit0')return `<span style="color:${v>=0?'var(--green)':'var(--red)'}">${money(v)}</span>`;
     return money(v);
