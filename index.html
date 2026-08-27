@@ -714,7 +714,8 @@ async function testConn(){
   try{
     log+='1) читаю load…\n';
     const d=await apiGet('load');
-    log+='   OK, записей в реестре: '+((d.registry||[]).length)+'\n';
+    log+='   OK. Версия Apps Script: '+(d.version||'СТАРАЯ (без версии)')+', записей: '+((d.registry||[]).length)+'\n';
+    if(!d.version){alert(log+'\n✗ На /exec развёрнута СТАРАЯ версия Apps Script (нет реестра).\n\nИсправить: открой Apps Script → вставь новый apps_script.gs → Развернуть → Управление развёртываниями → карандаш → Версия: «Новая» → Развернуть. URL не меняется.');CFG=old;return;}
     log+='2) пишу тестовую запись…\n';
     const id='__TEST__|'+Date.now();
     await apiPost({action:'saveState',id,state:{ip:'ТЕСТ',art:'проверка',scheme:'FBW'},result:{marzha:0,profit:0}});
