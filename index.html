@@ -306,8 +306,9 @@ const DEFAULT_IPS=[
 ];
 
 const DEFAULT_CONST={
-  log_fbw_l1:32, log_fbw_l2:28, log_fbw_l3:14, log_fbw_coef:1.70,
-  log_fbs_l1:32, log_fbs_l2:28, log_fbs_l3:14, log_fbs_coef:1.70,
+  log_fbw_base1:46, log_fbw_addl:14, log_fbw_coef:1.70,
+  log_fbs_base1:46, log_fbs_addl:14, log_fbs_coef:1.70,
+  log_t20:23, log_t40:26, log_t60:29, log_t80:30, log_t100:32,   /* тариф ₽/л для товара <1 л по объёму */
   prep_box:5, prep_move_l:7, fbs_accept_sc:0, fbs_accept_pvz:10,
   store_per_l:0.08, store_days:0,
   acquiring:3, wallet:3,
@@ -424,17 +425,26 @@ async function wbFetchPrice(a){
 
 /* ═══════ РАСЧЁТ ═══════ */
 function effBuyout(st){return st.buyM/100;}
+function subLiterTariff(v){                          // тариф ₽/л для товара < 1 л по объёму (табл. WB)
+  if(v<=0.200)return C.log_t20;
+  if(v<=0.400)return C.log_t40;
+  if(v<=0.600)return C.log_t60;
+  if(v<=0.800)return C.log_t80;
+  return C.log_t100;                                 // 0,801–1,000 л
+}
 function logParams(st){return st.scheme==='FBS'
-  ?{l1:C.log_fbs_l1,l2:C.log_fbs_l2,l3:C.log_fbs_l3,coef:C.log_fbs_coef}
-  :{l1:C.log_fbw_l1,l2:C.log_fbw_l2,l3:C.log_fbw_l3,coef:C.log_fbw_coef};}
+  ?{base1:C.log_fbs_base1,addl:C.log_fbs_addl,coef:C.log_fbs_coef}
+  :{base1:C.log_fbw_base1,addl:C.log_fbw_addl,coef:C.log_fbw_coef};}
 function logDetail(st){
   const p=logParams(st), v=st.vol;
-  const q1=Math.min(v,1)>0?1:0;                    // первый литр берётся целиком (мин. тариф)
-  const q2=Math.max(0,Math.min(v-1,1));            // доля второго литра
-  const q3=Math.max(0,v-2);                        // остаток
-  const c1=p.l1*(v>0?1:0), c2=p.l2*q2, c3=p.l3*q3; // стоимость по литрам
-  const base=c1+c2+c3, fwd=base*p.coef;
-  return {p,v,q2,q3,c1,c2,c3,base,fwd};
+  let base=0, mode='zero', tarif=0, dopL=0;
+  if(v>0 && v<=1){                                   // товар ≤ 1 л: объём × тариф за литр
+    tarif=subLiterTariff(v); base=v*tarif; mode='small';
+  } else if(v>1){                                    // товар > 1 л: 46 ₽ за 1-й литр + 14 ₽ за доп. литр (округл. вверх)
+    dopL=Math.ceil(v)-1; base=p.base1+p.addl*dopL; mode='big';
+  }
+  const fwd=base*p.coef;                             // × коэффициент склада
+  return {p,v,mode,tarif,dopL,base,fwd};
 }
 function commPct(st){
   const rec=COMM.find(c=>norm(c.pred)===norm(st.pred));
@@ -457,7 +467,8 @@ function compute(st){
   const store=C.store_per_l*storeLiters*L.p.coef*C.store_days;   // (0,08 ₽/л/день × литры) × коэф. склада × дни
   const prepBox=st.scheme==='FBW'?C.prep_box:0;
   const prepMove=st.scheme==='FBW'?C.prep_move_l*st.vol:0;
-  const prepAccept=st.scheme==='FBS'?(st.hand==='ПВЗ'?C.fbs_accept_pvz:C.fbs_accept_sc):0;
+  const prepAcceptBase=st.scheme==='FBS'?(st.hand==='ПВЗ'?C.fbs_accept_pvz:C.fbs_accept_sc):0;
+  const prepAccept=b>0?prepAcceptBase/b:prepAcceptBase;   // приёмка платится за каждую отправку → делим на выкуп
   const prep=prepBox+prepMove+prepAccept;
   const tax=priceSite*(C.tax/100);                              // налог — от цены на сайте
   const vat=C.vat>0?priceSite*C.vat/(100+C.vat):0;              // НДС уже сидит внутри цены: делим на (100+ставка), напр. /105×5
@@ -466,7 +477,7 @@ function compute(st){
   const orders=Math.ceil(clicks*(st.cr/100)), cpo=orders>0?st.bid/orders:0;
   const cps=b>0?cpo/b:cpo, drr=priceSPP>0?cps/priceSPP:0;
   const profit=profit0-cps, marzha=priceSite>0?profit/priceSite:0;
-  return {b,priceDisc,priceSPP,wallet,priceSite,acquiring,commNomPct,commRealPct,commNomRub,commRub,toTransfer,L,logFwd,logReturn,logWithBuyout,prep,prepBox,prepMove,prepAccept,store,storeLiters,tax,vat,profit0,cpc,orders,cpo,cps,drr,profit,marzha};
+  return {b,priceDisc,priceSPP,wallet,priceSite,acquiring,commNomPct,commRealPct,commNomRub,commRub,toTransfer,L,logFwd,logReturn,logWithBuyout,prep,prepBox,prepMove,prepAccept,prepAcceptBase,store,storeLiters,tax,vat,profit0,cpc,orders,cpo,cps,drr,profit,marzha};
 }
 function fmt(n){return (Math.round(n*100)/100).toLocaleString('ru-RU');}
 function neg(v){return '<span class="neg">−'+money(Math.abs(v))+'</span>';}
@@ -488,11 +499,16 @@ function calc(){
   const perSale=b>0?1/b:1, fwdPerSale=L.fwd*perSale, retPerSale=r.logWithBuyout-fwdPerSale;
   const logRows=[
     ['h','Логистика ('+S.scheme+')',fmt(S.vol)+' л',''],
-    ['','1-й литр',neg(L.c1),'Тариф 1-го литра '+fmt(L.p.l1)+' ₽ (мин. за отправку).'],
   ];
-  if(L.c2>0)logRows.push(['','2-й литр × '+fmt(L.q2),neg(L.c2),fmt(L.p.l2)+' ₽ × доля 2-го литра.']);
-  if(L.c3>0)logRows.push(['','3-й+ ('+fmt(L.q3)+' л)',neg(L.c3),fmt(L.p.l3)+' ₽ × литры свыше 2.']);
-  logRows.push(['','× коэф. склада '+fmt(L.p.coef),money1(L.fwd),'(сумма по литрам '+money1(L.base)+') × коэффициент = логистика вперёд за 1 отправку.']);
+  if(L.mode==='small'){
+    logRows.push(['','Объём × тариф',neg(L.base),fmt(S.vol)+' л × '+fmt(L.tarif)+' ₽/л (товар <1 л, тариф по объёму).']);
+  }else if(L.mode==='big'){
+    logRows.push(['','1-й литр',neg(L.p.base1),fmt(L.p.base1)+' ₽ за первый литр (товар >1 л).']);
+    if(L.dopL>0)logRows.push(['','Доп. литры × '+L.dopL,neg(L.p.addl*L.dopL),fmt(L.p.addl)+' ₽ × '+L.dopL+' (объём '+fmt(S.vol)+' л → вверх до '+Math.ceil(S.vol)+' л).']);
+  }else{
+    logRows.push(['','—','0 ₽','Объём не задан.']);
+  }
+  logRows.push(['','× коэф. склада '+fmt(L.p.coef),money1(L.fwd),'(база '+money1(L.base)+') × коэффициент = логистика вперёд за 1 отправку.']);
   logRows.push(['','Отправок на 1 выкуп',fmt(perSale)+' шт','1 ÷ выкуп ('+pct(b*100)+'). Чтобы продать 1 раз, товар едет к клиенту в среднем столько раз.']);
   logRows.push(['','Логистика вперёд на выкуп',neg(fwdPerSale),money1(L.fwd)+' × '+fmt(perSale)+' отправок.']);
   logRows.push(['','Возвраты на выкуп',neg(retPerSale),'Несостоявшиеся отправки ('+fmt(perSale-1)+' шт) × возврат «как логистика» ('+money1(L.fwd)+').']);
@@ -503,7 +519,7 @@ function calc(){
     prepRows.push(['','Обработка короба',neg(r.prepBox),fmt(C.prep_box)+' ₽/шт — складская обработка короба.']);
     prepRows.push(['','Перемещение '+fmt(C.prep_move_l)+' ₽/л',neg(r.prepMove),fmt(C.prep_move_l)+' ₽/л × '+fmt(S.vol)+' л.']);
   }else{
-    prepRows.push(['','Приёмка',neg(r.prepAccept),S.hand==='ПВЗ'?fmt(C.fbs_accept_pvz)+' ₽/шт (ПВЗ, первые 500).':'СЦ: по тарифам склада ('+fmt(C.fbs_accept_sc)+' ₽).']);
+    prepRows.push(['','Приёмка ÷ выкуп',neg(r.prepAccept),(S.hand==='ПВЗ'?money1(C.fbs_accept_pvz)+' ₽/шт (ПВЗ)':'СЦ '+money1(C.fbs_accept_sc)+' ₽/шт')+' ÷ выкуп ('+pct(r.b*100)+') — приёмка за каждую отправку.']);
   }
   prepRows.push(['tot','Итого приёмка',neg(r.prep),'']);
 
@@ -598,8 +614,9 @@ async function switchIp(){
 
 /* ═══════ КОНСТАНТЫ UI ═══════ */
 const CDEF={
-  cLog:[['log_fbw_l1','FBW · 1-й литр, ₽'],['log_fbw_l2','FBW · 2-й литр, ₽'],['log_fbw_l3','FBW · 3-й+ литр, ₽'],['log_fbw_coef','FBW · коэф. склада (×)'],
-        ['log_fbs_l1','FBS · 1-й литр, ₽'],['log_fbs_l2','FBS · 2-й литр, ₽'],['log_fbs_l3','FBS · 3-й+ литр, ₽'],['log_fbs_coef','FBS · коэф. склада (×)']],
+  cLog:[['log_fbw_base1','FBW · 1-й литр (>1 л), ₽'],['log_fbw_addl','FBW · доп. литр, ₽'],['log_fbw_coef','FBW · коэф. склада (×)'],
+        ['log_fbs_base1','FBS · 1-й литр (>1 л), ₽'],['log_fbs_addl','FBS · доп. литр, ₽'],['log_fbs_coef','FBS · коэф. склада (×)'],
+        ['log_t20','<1 л: 0–0,2 л, ₽/л'],['log_t40','<1 л: 0,2–0,4 л, ₽/л'],['log_t60','<1 л: 0,4–0,6 л, ₽/л'],['log_t80','<1 л: 0,6–0,8 л, ₽/л'],['log_t100','<1 л: 0,8–1,0 л, ₽/л']],
   cAcc:[['prep_box','Обработка короба FBW, ₽/шт'],['prep_move_l','Перемещение FBW, ₽/л'],['fbs_accept_sc','Приёмка FBS · СЦ, ₽/шт'],['fbs_accept_pvz','Приёмка FBS · ПВЗ, ₽/шт'],['store_per_l','Хранение, ₽/литр/день'],['store_days','Дней хранения']],
   cFin:[['acquiring','Эквайринг, %'],['wallet','WB-кошелёк, %'],['comm_def_fbw','Комиссия по умолч. FBW, %'],['comm_def_fbs','Комиссия по умолч. FBS, %'],['fbs_t13','FBS бонус до 13ч, п.%'],['fbs_t42','FBS бонус 13–42ч, п.%']],
   cFix:[['outsource','Аутсорсинг, ₽/ед'],['fixed','Постоянные, ₽/ед'],['ad_bid','Реклама · ставка/1000, ₽'],['ad_ctr','Реклама · CTR, %'],['ad_cr','Реклама · CR, %']]
