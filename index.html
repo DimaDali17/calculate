@@ -440,8 +440,8 @@ function logDetail(st){
   let base=0, mode='zero', tarif=0, dopL=0;
   if(v>0 && v<=1){                                   // товар ≤ 1 л: фиксированный тариф по градации объёма (не пропорционально)
     tarif=subLiterTariff(v); base=tarif; mode='small';
-  } else if(v>1){                                    // товар > 1 л: 46 ₽ за 1-й литр + 14 ₽ за доп. литр (округл. вверх)
-    dopL=Math.ceil(v)-1; base=p.base1+p.addl*dopL; mode='big';
+  } else if(v>1){                                    // товар > 1 л: 46 ₽ за 1-й литр + 14 ₽ за каждый доп. литр (пропорц. объёму)
+    dopL=v-1; base=p.base1+p.addl*dopL; mode='big';
   }
   const fwd=base*p.coef;                             // × коэффициент склада
   return {p,v,mode,tarif,dopL,base,fwd};
@@ -464,7 +464,7 @@ function compute(st){
   const toTransfer=priceSPP-commRub-acquiring;         // цена к перечислению = цена с СПП − реальная комиссия − эквайринг
   const L=logDetail(st), logFwd=L.fwd, logRetUnit=L.base;                          // возврат = базовый тариф БЕЗ коэф. склада (обратная логистика WB)
   const logReturn=(1-b)*logRetUnit, logWithBuyout=b>0?(logFwd+logReturn)/b:logFwd;  // (вперёд + возврат×невыкуп) ÷ выкуп
-  const storeLiters=Math.max(1,Math.ceil(st.vol));    // объём округляем вверх до целого литра (мин. 1 л)
+  const storeLiters=Math.max(1,st.vol);               // литры для хранения: пропорц. объёму, но минимум 1 л (мелочь <1 л = 1 л)
   const store=C.store_per_l*storeLiters*L.p.coef*C.store_days;   // (0,08 ₽/л/день × литры) × коэф. склада × дни
   const prepBox=st.scheme==='FBW'?C.prep_box:0;
   const prepMove=st.scheme==='FBW'?C.prep_move_l*st.vol:0;
@@ -505,7 +505,7 @@ function calc(){
     logRows.push(['','Тариф по объёму',neg(L.base),fmt(L.tarif)+' ₽ — фикс. тариф для '+fmt(S.vol)+' л (товар <1 л, по градации).']);
   }else if(L.mode==='big'){
     logRows.push(['','1-й литр',neg(L.p.base1),fmt(L.p.base1)+' ₽ за первый литр (товар >1 л).']);
-    if(L.dopL>0)logRows.push(['','Доп. литры × '+L.dopL,neg(L.p.addl*L.dopL),fmt(L.p.addl)+' ₽ × '+L.dopL+' (объём '+fmt(S.vol)+' л → вверх до '+Math.ceil(S.vol)+' л).']);
+    if(L.dopL>0)logRows.push(['','Доп. объём '+fmt(L.dopL)+' л',neg(L.p.addl*L.dopL),fmt(L.p.addl)+' ₽/л × '+fmt(L.dopL)+' л (объём '+fmt(S.vol)+' л − 1 л).']);
   }else{
     logRows.push(['','—','0 ₽','Объём не задан.']);
   }
@@ -542,7 +542,7 @@ function calc(){
     ...prepRows,
     ['h','Прочие расходы','',''],
     ['','Себестоимость (Расход-ШТ)',neg(S.cogs),'Из листа «Экон», колонка Расход-ШТ.'],
-    ...(r.store>0?[['','Хранение ('+fmt(C.store_days)+' дн.)',neg(r.store),fmt(C.store_per_l)+' ₽/л × '+r.storeLiters+' л (объём '+fmt(S.vol)+' л → вверх до целого) × коэф. склада '+fmt(r.L.p.coef)+' × '+fmt(C.store_days)+' дн.']]:[]),
+    ...(r.store>0?[['','Хранение ('+fmt(C.store_days)+' дн.)',neg(r.store),fmt(C.store_per_l)+' ₽/л × '+fmt(r.storeLiters)+' л (объём '+fmt(S.vol)+' л, мин. 1 л) × коэф. склада '+fmt(r.L.p.coef)+' × '+fmt(C.store_days)+' дн.']]:[]),
     ['','Аутсорсинг',neg(C.outsource),'Фикс на единицу (константа).'],
     ['','Постоянные',neg(C.fixed),'Прочие постоянные на единицу (константа).'],
     ['','Налог '+fmt(C.tax)+'% (от цены на сайте)',neg(r.tax),'Цена на сайте × '+fmt(C.tax)+'% (налог '+S.ip+').'],
