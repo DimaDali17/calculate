@@ -462,7 +462,8 @@ function compute(st){
   const commNomRub=priceDisc*(commNomPct/100);         // КВВ номинал от цены со скидкой (справочно)
   const commRub=priceDisc*(commRealPct/100);           // реальная комиссия = цена со скидкой × (КВВ − СПП)
   const toTransfer=priceSPP-commRub-acquiring;         // цена к перечислению = цена с СПП − реальная комиссия − эквайринг
-  const L=logDetail(st), logFwd=L.fwd, logReturn=(1-b)*logFwd, logWithBuyout=b>0?(logFwd+logReturn)/b:logFwd;
+  const L=logDetail(st), logFwd=L.fwd, logRetUnit=L.base;                          // возврат = базовый тариф БЕЗ коэф. склада (обратная логистика WB)
+  const logReturn=(1-b)*logRetUnit, logWithBuyout=b>0?(logFwd+logReturn)/b:logFwd;  // (вперёд + возврат×невыкуп) ÷ выкуп
   const storeLiters=Math.max(1,Math.ceil(st.vol));    // объём округляем вверх до целого литра (мин. 1 л)
   const store=C.store_per_l*storeLiters*L.p.coef*C.store_days;   // (0,08 ₽/л/день × литры) × коэф. склада × дни
   const prepBox=st.scheme==='FBW'?C.prep_box:0;
@@ -477,7 +478,7 @@ function compute(st){
   const orders=Math.ceil(clicks*(st.cr/100)), cpo=orders>0?st.bid/orders:0;
   const cps=b>0?cpo/b:cpo, drr=priceSPP>0?cps/priceSPP:0;
   const profit=profit0-cps, marzha=priceSite>0?profit/priceSite:0;
-  return {b,priceDisc,priceSPP,wallet,priceSite,acquiring,commNomPct,commRealPct,commNomRub,commRub,toTransfer,L,logFwd,logReturn,logWithBuyout,prep,prepBox,prepMove,prepAccept,prepAcceptBase,store,storeLiters,tax,vat,profit0,cpc,orders,cpo,cps,drr,profit,marzha};
+  return {b,priceDisc,priceSPP,wallet,priceSite,acquiring,commNomPct,commRealPct,commNomRub,commRub,toTransfer,L,logFwd,logRetUnit,logReturn,logWithBuyout,prep,prepBox,prepMove,prepAccept,prepAcceptBase,store,storeLiters,tax,vat,profit0,cpc,orders,cpo,cps,drr,profit,marzha};
 }
 function fmt(n){return (Math.round(n*100)/100).toLocaleString('ru-RU');}
 function neg(v){return '<span class="neg">−'+money(Math.abs(v))+'</span>';}
@@ -511,8 +512,8 @@ function calc(){
   logRows.push(['','× коэф. склада '+fmt(L.p.coef),money1(L.fwd),'(база '+money1(L.base)+') × коэффициент = логистика вперёд за 1 отправку.']);
   logRows.push(['','Отправок на 1 выкуп',fmt(perSale)+' шт','1 ÷ выкуп ('+pct(b*100)+'). Чтобы продать 1 раз, товар едет к клиенту в среднем столько раз.']);
   logRows.push(['','Логистика вперёд на выкуп',neg(fwdPerSale),money1(L.fwd)+' × '+fmt(perSale)+' отправок.']);
-  logRows.push(['','Возвраты на выкуп',neg(retPerSale),'Несостоявшиеся отправки ('+fmt(perSale-1)+' шт) × возврат «как логистика» ('+money1(L.fwd)+').']);
-  logRows.push(['tot','Логистика с выкупом',neg(r.logWithBuyout),'Вперёд на выкуп + возвраты на выкуп. Выкуп учтён один раз (через число отправок).']);
+  logRows.push(['','Возвраты на выкуп',neg(retPerSale),'Обратная логистика '+money1(L.base)+' (базовый тариф без коэф.) × '+fmt(perSale-1)+' несостоявш. отправок.']);
+  logRows.push(['tot','Логистика с выкупом',neg(r.logWithBuyout),'(вперёд '+money1(L.fwd)+' + возврат '+money1(L.base)+' × невыкуп '+pct((1-b)*100)+') ÷ выкуп '+pct(b*100)+'.']);
 
   const prepRows=[['h','Приёмка ('+(S.scheme==='FBW'?'FBW':'FBS · '+S.hand)+')','','']];
   if(S.scheme==='FBW'){
