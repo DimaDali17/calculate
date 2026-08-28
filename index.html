@@ -436,8 +436,8 @@ function compute(st){
   const wallet=priceSPP*(C.wallet/100), priceSite=priceSPP-wallet;
   const acquiring=priceDisc*(C.acquiring/100);
   const commNomPct=commPct(st), commRealPct=Math.max(0,commNomPct-st.spp);
-  const commNomRub=priceSPP*(commNomPct/100);          // КВВ номинал от цены с СПП (справочно)
-  const commRub=priceSPP*(commRealPct/100);            // реальная комиссия = цена с СПП × (КВВ − СПП)
+  const commNomRub=priceDisc*(commNomPct/100);         // КВВ номинал от цены со скидкой (справочно)
+  const commRub=priceDisc*(commRealPct/100);           // реальная комиссия = цена со скидкой × (КВВ − СПП)
   const toTransfer=priceSPP-commRub-acquiring;         // цена к перечислению = цена с СПП − реальная комиссия − эквайринг
   const L=logDetail(st), logFwd=L.fwd, logReturn=(1-b)*logFwd, logWithBuyout=b>0?(logFwd+logReturn)/b:logFwd;
   const store=C.store_per_l*st.vol*C.store_days;
@@ -489,8 +489,8 @@ function calc(){
     ['','− WB-кошелёк '+fmt(C.wallet)+'%',neg(r.wallet),'Цена с СПП × '+fmt(C.wallet)+'%.'],
     ['tot','Цена на сайте',money(r.priceSite),'Цена с СПП − WB-кошелёк. То, что реально платит покупатель. База налога.'],
     ['h','Удержания ВБ','',''],
-    ['','Реальная комиссия '+fmt(r.commRealPct)+'%',neg(r.commRub),'Цена с СПП × (КВВ '+fmt(r.commNomPct)+'% − СПП '+fmt(S.spp)+'%) = '+money(r.priceSPP)+' × '+fmt(r.commRealPct)+'%. СПП перекрывает часть КВВ.'],
-    ['sub','↳ КВВ '+fmt(r.commNomPct)+'% номинал, СПП '+fmt(S.spp)+'% перекрывает → реальная '+fmt(r.commRealPct)+'%','',''],
+    ['','Реальная комиссия '+fmt(r.commRealPct)+'%',neg(r.commRub),'Цена со скидкой × (КВВ '+fmt(r.commNomPct)+'% − СПП '+fmt(S.spp)+'%) = '+money(r.priceDisc)+' × '+fmt(r.commRealPct)+'%. И КВВ, и СПП считаются от цены со скидкой.'],
+    ['sub','↳ КВВ '+fmt(r.commNomPct)+'% номинал = '+money(r.commNomRub)+', СПП перекрывает '+fmt(S.spp)+'% → реальная '+fmt(r.commRealPct)+'%','',''],
     ['','Эквайринг '+fmt(C.acquiring)+'%',neg(r.acquiring),'Отдельно от комиссии. Цена со скидкой × '+fmt(C.acquiring)+'%.'],
     ['tot','Цена к перечислению',money(r.toTransfer),'Цена с СПП − реальная комиссия − эквайринг = '+money(r.priceSPP)+' − '+money(r.commRub)+' − '+money(r.acquiring)+'.'],
     ...logRows,
