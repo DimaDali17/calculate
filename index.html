@@ -257,6 +257,11 @@ table{width:100%;border-collapse:collapse}
       </div>
       <div class="card"><div class="ct">Постоянные и выкуп</div><div id="cFix"></div></div>
     </div>
+    <div class="grid2">
+      <div class="card"><div class="ct">Фулфилмент (свой склад / подготовка перед ВБ)</div><div id="cFF"></div>
+        <div class="sub" style="margin-top:8px">Приёмка + отправка на ВБ + хранение (₽/м³ × объём × дней). Считается на единицу, без поправки на выкуп. Выключить — «Фулфилмент вкл» = 0.</div>
+      </div>
+    </div>
     <div class="savebar">
       <div class="status" id="constStatus"></div>
       <button class="b" onclick="resetConst()">Сбросить к дефолту</button>
@@ -310,10 +315,11 @@ const DEFAULT_CONST={
   log_fbs_base1:46, log_fbs_addl:14, log_fbs_coef:1.70,
   log_t20:23, log_t40:26, log_t60:29, log_t80:30, log_t100:32,   /* тариф ₽/л для товара <1 л по объёму */
   prep_box:5, prep_move_l:7, fbs_accept_sc:0, fbs_accept_pvz:10,
+  ff_on:1, ff_accept:15, ff_send:35, ff_store_m3:60, ff_store_days:30,   /* Фулфилмент: вкл(1/0), приёмка ₽/шт, отправка на ВБ ₽/шт, хранение ₽/м³, дней */
   store_per_l:0.08, store_days:0,
   acquiring:3, wallet:3,
   comm_def_fbw:40, comm_def_fbs:44,
-  outsource:30, fixed:15,
+  fixed:60,
   fbs_t13:5, fbs_t42:3.5,
   ad_bid:400, ad_ctr:17, ad_cr:9,
   tax:6, vat:5   /* перезаписываются из активного ИП */
@@ -471,14 +477,16 @@ function compute(st){
   const prepAcceptBase=st.scheme==='FBS'?(st.hand==='ПВЗ'?C.fbs_accept_pvz:C.fbs_accept_sc):0;
   const prepAccept=b>0?prepAcceptBase/b:prepAcceptBase;   // приёмка платится за каждую отправку → делим на выкуп
   const prep=prepBox+prepMove+prepAccept;
+  const ffStore=C.ff_store_m3*(st.vol/1000)*C.ff_store_days;            // хранение ФФ: ₽/м³ × объём(м³) × дней
+  const ff=C.ff_on?(C.ff_accept+C.ff_send+ffStore):0;                   // приёмка + отправка на ВБ + хранение (без поправки на выкуп — расход на физ. единицу)
   const tax=priceSite*(C.tax/100);                              // налог — от цены на сайте
   const vat=C.vat>0?priceSite*C.vat/(100+C.vat):0;              // НДС уже сидит внутри цены: делим на (100+ставка), напр. /105×5
-  const profit0=toTransfer-st.cogs-C.outsource-C.fixed-logWithBuyout-prep-store-tax-vat;
+  const profit0=toTransfer-st.cogs-C.fixed-logWithBuyout-prep-store-ff-tax-vat;
   const clicks=1000*(st.ctr/100), cpc=clicks>0?st.bid/clicks:0;
   const orders=Math.ceil(clicks*(st.cr/100)), cpo=orders>0?st.bid/orders:0;
   const cps=b>0?cpo/b:cpo, drr=priceSPP>0?cps/priceSPP:0;
   const profit=profit0-cps, marzha=priceSite>0?profit/priceSite:0;
-  return {b,priceDisc,priceSPP,wallet,priceSite,acquiring,commNomPct,commRealPct,commNomRub,commRub,toTransfer,L,logFwd,logRetUnit,logReturn,logWithBuyout,prep,prepBox,prepMove,prepAccept,prepAcceptBase,store,storeLiters,tax,vat,profit0,cpc,orders,cpo,cps,drr,profit,marzha};
+  return {b,priceDisc,priceSPP,wallet,priceSite,acquiring,commNomPct,commRealPct,commNomRub,commRub,toTransfer,L,logFwd,logRetUnit,logReturn,logWithBuyout,prep,prepBox,prepMove,prepAccept,prepAcceptBase,ff,ffStore,store,storeLiters,tax,vat,profit0,cpc,orders,cpo,cps,drr,profit,marzha};
 }
 function fmt(n){return (Math.round(n*100)/100).toLocaleString('ru-RU');}
 function neg(v){return '<span class="neg">−'+money(Math.abs(v))+'</span>';}
@@ -524,6 +532,14 @@ function calc(){
   }
   prepRows.push(['tot','Итого приёмка',neg(r.prep),'']);
 
+  const ffRows=C.ff_on?[
+    ['h','Фулфилмент','',''],
+    ['','Приёмка на склад ФФ',neg(C.ff_accept),fmt(C.ff_accept)+' ₽/шт.'],
+    ['','Отправка на ВБ',neg(C.ff_send),fmt(C.ff_send)+' ₽/шт.'],
+    ...(r.ffStore>0?[['','Хранение ФФ ('+fmt(C.ff_store_days)+' дн.)',neg(r.ffStore),fmt(C.ff_store_m3)+' ₽/м³ × объём '+fmt(S.vol)+' л (= '+(S.vol/1000).toFixed(4)+' м³) × '+fmt(C.ff_store_days)+' дн.']]:[]),
+    ['tot','Итого фулфилмент',neg(r.ff),'Приёмка + отправка на ВБ + хранение. Без поправки на выкуп (расход на физ. единицу).']
+  ]:[];
+
   const rows=[
     ['h','Выручка','',''],
     ['','Цена продавца',money(S.price),'Исходная цена до скидок.'],
@@ -540,11 +556,11 @@ function calc(){
     ['tot','Цена к перечислению',money(r.toTransfer),'Цена с СПП − реальная комиссия − эквайринг = '+money(r.priceSPP)+' − '+money(r.commRub)+' − '+money(r.acquiring)+'.'],
     ...logRows,
     ...prepRows,
+    ...ffRows,
     ['h','Прочие расходы','',''],
     ['','Себестоимость (Расход-ШТ)',neg(S.cogs),'Из листа «Экон», колонка Расход-ШТ.'],
     ...(r.store>0?[['','Хранение ('+fmt(C.store_days)+' дн.)',neg(r.store),fmt(C.store_per_l)+' ₽/л × '+fmt(r.storeLiters)+' л (объём '+fmt(S.vol)+' л, мин. 1 л) × коэф. склада '+fmt(r.L.p.coef)+' × '+fmt(C.store_days)+' дн.']]:[]),
-    ['','Аутсорсинг',neg(C.outsource),'Фикс на единицу (константа).'],
-    ['','Постоянные',neg(C.fixed),'Прочие постоянные на единицу (константа).'],
+    ['','Постоянные',neg(C.fixed),'Все постоянные затраты ÷ число реализованных штук (константа).'],
     ['','Налог '+fmt(C.tax)+'% (от цены на сайте)',neg(r.tax),'Цена на сайте × '+fmt(C.tax)+'% (налог '+S.ip+').'],
     ...(C.vat>0?[['','НДС '+fmt(C.vat)+'% (внутри цены)',neg(r.vat),'НДС уже сидит внутри цены на сайте: '+money(r.priceSite)+' ÷ '+fmt(100+C.vat)+' × '+fmt(C.vat)+'.']]:[]),
     ['tot','Прибыль до рекламы',money(r.profit0),'Цена к перечислению минус все расходы выше.'],
@@ -620,7 +636,8 @@ const CDEF={
         ['log_t20','<1 л: 0–0,2 л, ₽'],['log_t40','<1 л: 0,2–0,4 л, ₽'],['log_t60','<1 л: 0,4–0,6 л, ₽'],['log_t80','<1 л: 0,6–0,8 л, ₽'],['log_t100','<1 л: 0,8–1,0 л, ₽']],
   cAcc:[['prep_box','Обработка короба FBW, ₽/шт'],['prep_move_l','Перемещение FBW, ₽/л'],['fbs_accept_sc','Приёмка FBS · СЦ, ₽/шт'],['fbs_accept_pvz','Приёмка FBS · ПВЗ, ₽/шт'],['store_per_l','Хранение, ₽/литр/день'],['store_days','Дней хранения']],
   cFin:[['acquiring','Эквайринг, %'],['wallet','WB-кошелёк, %'],['comm_def_fbw','Комиссия по умолч. FBW, %'],['comm_def_fbs','Комиссия по умолч. FBS, %'],['fbs_t13','FBS бонус до 13ч, п.%'],['fbs_t42','FBS бонус 13–42ч, п.%']],
-  cFix:[['outsource','Аутсорсинг, ₽/ед'],['fixed','Постоянные, ₽/ед'],['ad_bid','Реклама · ставка/1000, ₽'],['ad_ctr','Реклама · CTR, %'],['ad_cr','Реклама · CR, %']]
+  cFix:[['fixed','Постоянные (все ÷ шт), ₽/ед'],['ad_bid','Реклама · ставка/1000, ₽'],['ad_ctr','Реклама · CTR, %'],['ad_cr','Реклама · CR, %']],
+  cFF:[['ff_on','Фулфилмент вкл (1/0)'],['ff_accept','Приёмка на склад ФФ, ₽/шт'],['ff_send','Отправка на ВБ, ₽/шт'],['ff_store_m3','Хранение ФФ, ₽/м³'],['ff_store_days','Дней хранения ФФ']]
 };
 function renderConst(){
   for(const box in CDEF)$(box).innerHTML=CDEF[box].map(([k,l])=>`<div class="ce"><label>${l}</label><input type="number" step="any" value="${C[k]}" onchange="C['${k}']=num(this.value);calc()"></div>`).join('');
@@ -700,6 +717,7 @@ const MROWS=[
   ['','Выкуп, %',st=>fmt(st.buyM)],
   ['','Логистика с выкупом',(st,r)=>money(r.logWithBuyout)],
   ['','Приёмка',(st,r)=>money(r.prep)],
+  ['','Фулфилмент',(st,r)=>money(r.ff)],
   ['','Себестоимость',st=>money(st.cogs)],
   ['','Налог',(st,r)=>money(r.tax)],
   ['','НДС',(st,r)=>money(r.vat)],
