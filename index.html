@@ -51,14 +51,14 @@ body{font-family:'Comfortaa',sans-serif;background:var(--bg);color:var(--ink);fo
 table{width:100%;border-collapse:collapse}
 .brk td{padding:5px 4px;border-bottom:1px solid var(--border);font-size:12px;color:var(--ink)}
 .brk td:first-child{color:var(--ink2)}
-.brk td:nth-child(2){text-align:right;font-variant-numeric:tabular-nums;font-weight:600;white-space:nowrap}
-.brk td:nth-child(3){text-align:right;font-variant-numeric:tabular-nums;font-weight:500;white-space:nowrap;color:var(--ink3);background:var(--bg3);border-left:1px solid var(--border)}
+.brk td:nth-child(3){text-align:right;font-variant-numeric:tabular-nums;font-weight:600;white-space:nowrap}
+.brk td.wcol{text-align:right;font-variant-numeric:tabular-nums;font-weight:400;white-space:nowrap;color:var(--ink3);opacity:.5;font-size:11px}
+.brk td.wcol:nth-child(2){border-right:1px solid var(--border)}
+.brk td.wcol:nth-child(4){border-left:1px solid var(--border)}
 .brk thead th{font-size:9px;text-transform:uppercase;letter-spacing:.06em;color:var(--ink3);font-weight:700;padding:3px 4px;text-align:right;border-bottom:1px solid var(--border2)}
 .brk thead th:first-child{text-align:left}
-.brk .winp{width:74px;text-align:right;font:inherit;font-size:12px;font-variant-numeric:tabular-nums;color:var(--ink);background:#fff;border:1px solid var(--border2);border-radius:5px;padding:1px 5px}
-.brk td.wbetter{color:var(--green)!important;font-weight:700}
-.brk td.wworse{color:var(--red)!important;font-weight:700}
-.brk tr.g td:first-child,.brk tr.g td:nth-child(2){color:var(--green)}
+.brk thead th.wh{opacity:.6;font-weight:600}
+.brk tr.g td:first-child,.brk tr.g td:nth-child(3){color:var(--green)}
 .brk tr.h td{font-weight:700;background:var(--bg3);text-transform:uppercase;font-size:9px;letter-spacing:.08em;color:var(--ink3);border-bottom:1px solid var(--border2)}
 .brk tr.sub td{color:var(--ink3);font-size:11px;padding-top:2px;border-bottom:1px dashed var(--border)}
 .brk tr.sub td:first-child{padding-left:14px}
@@ -208,11 +208,9 @@ table{width:100%;border-collapse:collapse}
 
       <div>
         <div class="card">
-          <div class="ct">Экономика по шагам <span id="brkMode" style="font-size:9px;color:var(--ink3)"></span>
-            <button onclick="resetWhat()" style="float:right;font-size:10px;padding:2px 8px;border:1px solid var(--border2);border-radius:6px;background:var(--bg3);color:var(--ink2);cursor:pointer">↺ сброс сравнения</button>
-          </div>
-          <table class="brk"><thead><tr><th></th><th>значение</th><th>что-если</th></tr></thead><tbody id="brk"></tbody></table>
-          <div class="sub" style="margin-top:6px">Наведи курсор на строку — покажет формулу. В серой колонке «что-если» можно вручную поменять <b>любую</b> цифру (цену, любую скидку, комиссию, логистику, налог, себестоимость и т. д.) — подытоги, прибыль и маржа пересчитаются автоматически (зелёным — лучше, красным — хуже основного). Пусто в поле = вернуть строке основное значение. «↺ сброс» обнуляет все правки.</div>
+          <div class="ct">Экономика по шагам <span id="brkMode" style="font-size:9px;color:var(--ink3)"></span></div>
+          <table class="brk"><thead><tr><th></th><th class="wh">скидка +5%</th><th>значение</th><th class="wh">скидка −5%</th></tr></thead><tbody id="brk"></tbody></table>
+          <div class="sub" style="margin-top:6px">Наведи курсор на строку — покажет формулу. Бледные колонки по бокам показывают тот же расчёт, если скидку продавца поднять на 5 п.п. (слева) или снизить на 5 п.п. (справа); цифры округлены до целых — быстро видно чувствительность к цене.</div>
         </div>
       </div>
     </div>
@@ -266,8 +264,8 @@ table{width:100%;border-collapse:collapse}
       <div class="card"><div class="ct">Постоянные и выкуп</div><div id="cFix"></div></div>
     </div>
     <div class="grid2">
-      <div class="card"><div class="ct">Фулфилмент (свой склад / подготовка перед ВБ)</div><div id="cFF"></div>
-        <div class="sub" style="margin-top:8px">Приёмка + отправка на ВБ + хранение (₽/м³ × объём × дней). Считается на единицу, без поправки на выкуп. Выключить — «Фулфилмент вкл» = 0.</div>
+      <div class="card"><div class="ct">ФФ (DarkStore)</div><div id="cFF"></div>
+        <div class="sub" style="margin-top:8px">Фиксированный расход на единицу (по умолчанию 50 ₽), без поправки на выкуп. Выключить — «ФФ (DarkStore) вкл» = 0.</div>
       </div>
     </div>
     <div class="savebar">
@@ -323,7 +321,7 @@ const DEFAULT_CONST={
   log_fbs_base1:46, log_fbs_addl:14, log_fbs_coef:1.70,
   log_t20:23, log_t40:26, log_t60:29, log_t80:30, log_t100:32,   /* тариф ₽/л для товара <1 л по объёму */
   prep_box:5, prep_move_l:7, fbs_accept_sc:0, fbs_accept_pvz:10,
-  ff_on:1, ff_accept:15, ff_send_pct:3.5, ff_store_m3:60, ff_store_days:30,   /* Фулфилмент: вкл(1/0), приёмка ₽/шт, отправка на ВБ % от цены на сайте, хранение ₽/м³, дней */
+  ff_on:1, ff_flat:50,   /* Фулфилмент (DarkStore): вкл(1/0), фикс. ₽/шт */
   store_per_l:0.08, store_days:0,
   acquiring:3, wallet:3,
   comm_def_fbw:40, comm_def_fbs:44,
@@ -342,7 +340,6 @@ const DEMO_ARTS=[{art:'Pantal.SK.bejnew.02',pred:'Трусы',vol:0.47,cogs:214}
 
 /* ═══════ STATE ═══════ */
 let CFG={url:'',key:'',wbApi:false,ips:DEFAULT_IPS.map(x=>({...x}))};
-let wOv={};   // «что-если»: ручные переопределения строк серой колонки (ключ строки → число)
 let C={...DEFAULT_CONST}, COMM=DEFAULT_COMM.map(x=>({...x}));
 let ARTS=[], S={...DEFAULT_STATE}, REG=[], ONLINE=false, curTab='calc';
 
@@ -486,9 +483,7 @@ function compute(st){
   const prepAcceptBase=st.scheme==='FBS'?(st.hand==='ПВЗ'?C.fbs_accept_pvz:C.fbs_accept_sc):0;
   const prepAccept=prepAcceptBase;                                     // приёмка FBS без поправки на выкуп
   const prep=prepBox+prepMove+prepAccept;
-  const ffStore=C.ff_store_m3*(st.vol/1000)*C.ff_store_days;            // хранение ФФ: ₽/м³ × объём(м³) × дней
-  const ffSend=priceSite*(C.ff_send_pct/100);                           // отправка на ВБ: % от цены на сайте
-  const ff=C.ff_on?(C.ff_accept+ffSend+ffStore):0;                     // приёмка + отправка + хранение (расход на физ. единицу, без поправки на выкуп)
+  const ff=C.ff_on?C.ff_flat:0;                                         // ФФ (DarkStore): фикс. на единицу, без поправки на выкуп
   const tax=priceSite*(C.tax/100);                              // налог — от цены на сайте
   const vat=C.vat>0?priceSite*C.vat/(100+C.vat):0;              // НДС уже сидит внутри цены: делим на (100+ставка), напр. /105×5
   const profit0=toTransfer-st.cogs-C.fixed-logWithBuyout-prep-store-ff-tax-vat;
@@ -496,7 +491,7 @@ function compute(st){
   const orders=Math.ceil(clicks*(st.cr/100)), cpo=orders>0?st.bid/orders:0;
   const cps=b>0?cpo/b:cpo, drr=priceSPP>0?cps/priceSPP:0;
   const profit=profit0-cps, marzha=priceSite>0?profit/priceSite:0;
-  return {b,priceDisc,priceSPP,wallet,priceSite,acquiring,commNomPct,commRealPct,commNomRub,commRub,toTransfer,L,logFwd,logRetUnit,logReturn,logWithBuyout,prep,prepBox,prepMove,prepAccept,prepAcceptBase,ff,ffSend,ffStore,store,storeLiters,tax,vat,profit0,cpc,orders,cpo,cps,drr,profit,marzha};
+  return {b,priceDisc,priceSPP,wallet,priceSite,acquiring,commNomPct,commRealPct,commNomRub,commRub,toTransfer,L,logFwd,logRetUnit,logReturn,logWithBuyout,prep,prepBox,prepMove,prepAccept,prepAcceptBase,ff,store,storeLiters,tax,vat,profit0,cpc,orders,cpo,cps,drr,profit,marzha};
 }
 function fmt(n){return (Math.round(n*100)/100).toLocaleString('ru-RU');}
 function neg(v){return '<span class="neg">−'+money(Math.abs(v))+'</span>';}
@@ -548,11 +543,7 @@ function buildBreak(r,S){
   prepRows.push(['tot','Итого приёмка',neg(r.prep),'']);
 
   const ffRows=C.ff_on?[
-    ['h','Фулфилмент','',''],
-    ['','Приёмка на склад ФФ',neg(C.ff_accept),fmt(C.ff_accept)+' ₽/шт.'],
-    ['','Отправка на ВБ '+fmt(C.ff_send_pct)+'%',neg(r.ffSend),fmt(C.ff_send_pct)+'% от цены на сайте ('+money(r.priceSite)+').'],
-    ...(r.ffStore>0?[['','Хранение ФФ ('+fmt(C.ff_store_days)+' дн.)',neg(r.ffStore),fmt(C.ff_store_m3)+' ₽/м³ × объём '+fmt(S.vol)+' л (= '+(S.vol/1000).toFixed(4)+' м³) × '+fmt(C.ff_store_days)+' дн.']]:[]),
-    ['tot','Итого фулфилмент',neg(r.ff),'Приёмка + отправка на ВБ + хранение. Без поправки на выкуп (расход на физ. единицу).']
+    ['','ФФ (DarkStore)',neg(r.ff),'Фулфилмент (DarkStore): фикс. '+fmt(C.ff_flat)+' ₽/шт. Без поправки на выкуп.']
   ]:[];
 
   const rows=[
@@ -590,33 +581,39 @@ function buildBreak(r,S){
   return rows;
 }
 
-/* Серая колонка «что-если»: ручной P&L. wOv[key] — переопределение строки; иначе значение из основного расчёта r. */
-function computeGrey(r,S){
-  const g={}, get=(k,def)=>wOv[k]!=null?wOv[k]:def;
+/* Две доп. колонки: значение каждой строки при скидке продавца +5 п.п. (слева) и −5 п.п. (справа). */
+function scenVal(r,S,key){
   const fwdPer=r.b>0?r.logFwd/r.b:r.logFwd;
-  g.price=get('price',S.price);
-  g.discRub=get('discRub',S.price*S.disc/100);          g.priceDisc=g.price-g.discRub;
-  g.sppRub=get('sppRub',r.priceDisc*S.spp/100);         g.priceSPP=g.priceDisc-g.sppRub;
-  g.walletRub=get('walletRub',r.wallet);                g.priceSite=g.priceSPP-g.walletRub;
-  g.commRub=get('commRub',r.commRub);
-  g.acqRub=get('acqRub',r.acquiring);                   g.toTransfer=g.priceSPP-g.commRub-g.acqRub;
-  g.logFwdPer=get('logFwdPer',fwdPer);
-  g.logRetPer=get('logRetPer',r.logWithBuyout-fwdPer);  g.log=g.logFwdPer+g.logRetPer;
-  g.prepBox=get('prepBox',r.prepBox);
-  g.prepMove=get('prepMove',r.prepMove);
-  g.prepAccept=get('prepAccept',r.prepAccept);          g.prep=(S.scheme==='FBW')?(g.prepBox+g.prepMove):g.prepAccept;
-  g.ffAccept=get('ffAccept',C.ff_accept);
-  g.ffSendRub=get('ffSendRub',r.ffSend);
-  g.ffStore=get('ffStore',r.ffStore);                   g.ff=C.ff_on?(g.ffAccept+g.ffSendRub+g.ffStore):0;
-  g.cogs=get('cogs',S.cogs);
-  g.store=get('store',r.store);
-  g.fixed=get('fixed',C.fixed);
-  g.tax=get('tax',r.tax);
-  g.vat=get('vat',r.vat);
-  g.profit0=g.toTransfer-g.cogs-g.store-g.fixed-g.tax-g.vat-g.log-g.prep-g.ff;
-  g.cps=get('cps',r.cps);                               g.drr=g.priceSPP>0?g.cps/g.priceSPP:0;
-  g.profit=g.profit0-g.cps;                             g.marzha=g.priceSite>0?g.profit/g.priceSite:0;
-  return g;
+  switch(key){
+    case 'price': return S.price;
+    case 'discRub': return S.price*S.disc/100;
+    case 'priceDisc': return r.priceDisc;
+    case 'sppRub': return r.priceDisc*S.spp/100;
+    case 'priceSPP': return r.priceSPP;
+    case 'walletRub': return r.wallet;
+    case 'priceSite': return r.priceSite;
+    case 'commRub': return r.commRub;
+    case 'acqRub': return r.acquiring;
+    case 'logFwdPer': return fwdPer;
+    case 'logRetPer': return r.logWithBuyout-fwdPer;
+    case 'log': return r.logWithBuyout;
+    case 'prepBox': return r.prepBox;
+    case 'prepMove': return r.prepMove;
+    case 'prepAccept': return r.prepAccept;
+    case 'prep': return r.prep;
+    case 'ff': return r.ff;
+    case 'cogs': return S.cogs;
+    case 'store': return r.store;
+    case 'fixed': return C.fixed;
+    case 'tax': return r.tax;
+    case 'vat': return r.vat;
+    case 'profit0': return r.profit0;
+    case 'cps': return r.cps;
+    case 'drr': return r.drr;
+    case 'profit': return r.profit;
+    case 'marzha': return r.marzha;
+  }
+  return 0;
 }
 // [префикс строки, ключ в g, редактируемая?, формат]  — специфичные префиксы идут раньше общих
 const WMAP=[
@@ -629,40 +626,34 @@ const WMAP=[
   ['Логистика вперёд на выкуп','logFwdPer',1,'neg'], ['Возвраты на выкуп','logRetPer',1,'neg'],
   ['Логистика с выкупом','log',0,'neg'],
   ['Обработка короба','prepBox',1,'neg'],   ['Перемещение','prepMove',1,'neg'],
-  ['Итого приёмка','prep',0,'neg'],         ['Приёмка на склад ФФ','ffAccept',1,'neg'],
+  ['Итого приёмка','prep',0,'neg'],
   ['Приёмка','prepAccept',1,'neg'],
-  ['Отправка на ВБ','ffSendRub',1,'neg'],   ['Хранение ФФ','ffStore',1,'neg'],
-  ['Итого фулфилмент','ff',0,'neg'],
+  ['ФФ (DarkStore)','ff',0,'neg'],
   ['Себестоимость','cogs',1,'neg'],         ['Хранение (','store',1,'neg'],
   ['Постоянные','fixed',1,'neg'],           ['Налог','tax',1,'neg'],  ['НДС','vat',1,'neg'],
   ['Прибыль до рекламы','profit0',0,'money'],
   ['Реклама на выкуп','cps',1,'neg'],       ['ДРР','drr',0,'pct'],
   ['Прибыль с продажи','profit',0,'money'], ['Маржинальность','marzha',0,'pct']
 ];
-function gDisp(val,fmtk){ return fmtk==='pct'?pct(val*100):(fmtk==='neg'?'<span class="neg">−'+money(Math.abs(val))+'</span>':money(val)); }
+function scenDisp(val,fmtk){
+  if(fmtk==='pct') return Math.round(val*100)+' %';
+  const n=Math.round(val);
+  if(fmtk==='neg') return (n!==0?'−':'')+Math.abs(n).toLocaleString('ru-RU')+' ₽';
+  return n.toLocaleString('ru-RU')+' ₽';
+}
 function renderBreak(mainRows, r, S){
-  const g=computeGrey(r,S);
+  const cl=d=>Math.max(0,Math.min(100,d));
+  const SP={...S,disc:cl(S.disc+5)}, SM={...S,disc:cl(S.disc-5)};
+  const rP=compute(SP), rM=compute(SM);
   $('brk').innerHTML=mainRows.map(row=>{
     const [cls,l,v,tip]=row;
     const isHdr=/(^|\s)h(\s|$)/.test(cls)||cls==='sub';
-    let wcell;
     const m=isHdr?null:WMAP.find(x=>l.startsWith(x[0]));
-    if(!m){ wcell='<td class="wcell">'+(isHdr?'':v)+'</td>'; }        // заголовки пустые, прочие строки-пояснения зеркалят
-    else if(m[2]){                                                     // редактируемая листовая строка
-      const shown=Math.round(g[m[1]]*100)/100;
-      wcell=`<td class="wcell"><input class="winp" value="${shown}" onchange="setWhat('${m[1]}',this.value)"></td>`;
-    } else {                                                           // считаемый подытог
-      let cc='';
-      if(m[1]==='profit0') cc=g.profit0>r.profit0?' wbetter':(g.profit0<r.profit0?' wworse':'');
-      else if(m[1]==='profit') cc=g.profit>r.profit?' wbetter':(g.profit<r.profit?' wworse':'');
-      else if(m[1]==='marzha') cc=g.marzha>r.marzha?' wbetter':(g.marzha<r.marzha?' wworse':'');
-      wcell=`<td class="wcell${cc}">${gDisp(g[m[1]],m[3])}</td>`;
-    }
-    return `<tr class="${cls}"${tip?' title="'+tip.replace(/"/g,'&quot;')+'"':''}><td>${l}</td><td>${v}</td>${wcell}</tr>`;
+    const cP=m?scenDisp(scenVal(rP,SP,m[1]),m[3]):'';
+    const cM=m?scenDisp(scenVal(rM,SM,m[1]),m[3]):'';
+    return `<tr class="${cls}"${tip?' title="'+tip.replace(/"/g,'&quot;')+'"':''}><td>${l}</td><td class="wcol">${cP}</td><td>${v}</td><td class="wcol">${cM}</td></tr>`;
   }).join('');
 }
-function setWhat(k,val){ const s=String(val).trim(); if(s==='') delete wOv[k]; else wOv[k]=num(val); calc(); }
-function resetWhat(){ wOv={}; calc(); }
 
 /* ═══════ ПОЛЯ ═══════ */
 function readInputs(){
@@ -725,7 +716,7 @@ const CDEF={
   cAcc:[['prep_box','Обработка короба FBW, ₽/шт'],['prep_move_l','Перемещение FBW, ₽/л'],['fbs_accept_sc','Приёмка FBS · СЦ, ₽/шт'],['fbs_accept_pvz','Приёмка FBS · ПВЗ, ₽/шт'],['store_per_l','Хранение, ₽/литр/день'],['store_days','Дней хранения']],
   cFin:[['acquiring','Эквайринг, %'],['wallet','WB-кошелёк, %'],['comm_def_fbw','Комиссия по умолч. FBW, %'],['comm_def_fbs','Комиссия по умолч. FBS, %'],['fbs_t13','FBS бонус до 13ч, п.%'],['fbs_t42','FBS бонус 13–42ч, п.%']],
   cFix:[['fixed','Постоянные (все ÷ шт), ₽/ед'],['ad_bid','Реклама · ставка/1000, ₽'],['ad_ctr','Реклама · CTR, %'],['ad_cr','Реклама · CR, %']],
-  cFF:[['ff_on','Фулфилмент вкл (1/0)'],['ff_accept','Приёмка на склад ФФ, ₽/шт'],['ff_send_pct','Отправка на ВБ, % от цены на сайте'],['ff_store_m3','Хранение ФФ, ₽/м³'],['ff_store_days','Дней хранения ФФ']]
+  cFF:[['ff_on','ФФ (DarkStore) вкл (1/0)'],['ff_flat','ФФ (DarkStore), ₽/шт']]
 };
 function renderConst(){
   for(const box in CDEF)$(box).innerHTML=CDEF[box].map(([k,l])=>`<div class="ce"><label>${l}</label><input type="number" step="any" value="${C[k]}" onchange="C['${k}']=num(this.value);calc()"></div>`).join('');
@@ -805,7 +796,7 @@ const MROWS=[
   ['','Выкуп, %',st=>fmt(st.buyM)],
   ['','Логистика с выкупом',(st,r)=>money(r.logWithBuyout)],
   ['','Приёмка',(st,r)=>money(r.prep)],
-  ['','Фулфилмент',(st,r)=>money(r.ff)],
+  ['','ФФ (DarkStore)',(st,r)=>money(r.ff)],
   ['','Себестоимость',st=>money(st.cogs)],
   ['','Налог',(st,r)=>money(r.tax)],
   ['','НДС',(st,r)=>money(r.vat)],
