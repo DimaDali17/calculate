@@ -513,7 +513,7 @@ async function wbFetchBuyout(a){
   try{
     const j=parseJSON(await (await fetch(CFG.url+(CFG.url.includes('?')?'&':'?')+'wbbuyout='+encodeURIComponent(a.nmid)+'&ip='+encodeURIComponent(S.ip))).text());
     const b=(j&&j.buyout!=null)?j.buyout:((j&&j.percent!=null)?j.percent:null);
-    if(b!=null&&isFinite(b)&&b>=0)setAuto('i_buyM',Math.round(b*10)/10);
+    if(b!=null&&isFinite(b)&&b>0)setAuto('i_buyM',Math.round(b*10)/10);
     calc();
   }catch(e){}
 }
