@@ -1060,7 +1060,7 @@ async function saveConst(){
 function reload(){$('placeholder').style.display='block';$('banner').className='banner';boot();}
 
 /* ═══════ НАСТРОЙКИ ═══════ */
-function loadCfg(){try{const c=JSON.parse(localStorage.getItem(LS_CFG)||'{}');CFG.url=c.url||'';CFG.key=c.key||'';CFG.wbApi=!!c.wbApi;CFG.ips=(c.ips&&c.ips.length)?c.ips:DEFAULT_IPS.map(x=>({...x}));CFG.ips=CFG.ips.map(p=>({...p,rashod:p.rashod||RASHOD_BY_NAME[p.name]||''}));}catch(e){}}
+function loadCfg(){try{const c=JSON.parse(localStorage.getItem(LS_CFG)||'{}');CFG.url=c.url||'';CFG.key=c.key||'';CFG.wbApi=!!c.wbApi;CFG.ips=(c.ips&&c.ips.length)?c.ips:DEFAULT_IPS.map(x=>({...x}));CFG.ips=CFG.ips.map(p=>({...p,rashod:(p.rashod&&p.rashod.indexOf('/gviz/')<0)?p.rashod:(RASHOD_BY_NAME[p.name]||p.rashod||'')}));}catch(e){}}
 function openSettings(){
   $('set_url').value=CFG.url;$('set_key').value=CFG.key;$('set_wb').checked=CFG.wbApi;
   $('ipEditor').innerHTML=CFG.ips.map((p,i)=>`<div class="ipbox"><div class="ct2">ИП №${i+1}</div>
