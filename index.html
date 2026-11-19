@@ -484,7 +484,7 @@ function wbEnabled(){return !!(CFG.url&&CFG.wbApi);}
 async function wbFetchPrice(a){
   if(!a||!a.nmid||!CFG.url)return;
   try{
-    const r=await fetch(CFG.url+(CFG.url.includes('?')?'&':'?')+'wbprice='+encodeURIComponent(a.nmid));
+    const r=await fetch(CFG.url+(CFG.url.includes('?')?'&':'?')+'wbprice='+encodeURIComponent(a.nmid)+'&ip='+encodeURIComponent(S.ip));
     const j=parseJSON(await r.text());
     const g=j&&j.data&&j.data.listGoods&&j.data.listGoods[0];
     if(g){
