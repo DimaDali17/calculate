@@ -508,7 +508,7 @@ async function wbFetchSpp(a){
 async function wbFetchBuyout(a){
   if(!a||!a.nmid||!CFG.url)return;
   try{
-    const j=parseJSON(await (await fetch(CFG.url+(CFG.url.includes('?')?'&':'?')+'wbbuyout='+encodeURIComponent(a.nmid))).text());
+    const j=parseJSON(await (await fetch(CFG.url+(CFG.url.includes('?')?'&':'?')+'wbbuyout='+encodeURIComponent(a.nmid)+'&ip='+encodeURIComponent(S.ip))).text());
     const b=(j&&j.buyout!=null)?j.buyout:((j&&j.percent!=null)?j.percent:null);
     if(b!=null&&isFinite(b)&&b>=0)setAuto('i_buyM',Math.round(b*10)/10);
     calc();
