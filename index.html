@@ -315,8 +315,8 @@ const IP1_ARTS='https://docs.google.com/spreadsheets/d/e/2PACX-1vRv2VuvAbmweu5Q_
 const IP2_ARTS='https://docs.google.com/spreadsheets/d/e/2PACX-1vS4upRNoJpKgaEClkUgzfEBePMDEIYNBNHGO-iV5wqa0lzZPh1wLKuRw-fC2XDyc-kixxFbq4nPbKh9/pub?gid=612792464&single=true&output=csv';
 const IP1_ECON='https://docs.google.com/spreadsheets/d/e/2PACX-1vRd-F9AS2AOqG3-_39PX6jHwU-5fYDYuojWhuz07tZM7qkIxxCZriy-fQiqxmwYPFm3Za82g-dU1T7B/pub?gid=1189729527&single=true&output=csv';
 const IP2_ECON='https://docs.google.com/spreadsheets/d/e/2PACX-1vQuVvUEHyqdVP2ZHULOoeNyKdJrnI5qHcp8EI9uEns-xFfRaH_OifbV4yZEqeS_1a7CBVKMQ2TYi9pp/pub?gid=1189729527&single=true&output=csv';
-const IP1_RASHOD='https://docs.google.com/spreadsheets/d/1rGjangN77xW_BTrY3GOUsc91xd0FghgE6fRzt4V__bc/gviz/tq?tqx=out:csv&sheet=расход';
-const IP2_RASHOD='https://docs.google.com/spreadsheets/d/1QQSX8HdH2XcR3KN7isKgZp81fvEDFq4idVH-4K-kD7U/gviz/tq?tqx=out:csv&sheet=расход';
+const IP1_RASHOD='https://docs.google.com/spreadsheets/d/e/2PACX-1vRd-F9AS2AOqG3-_39PX6jHwU-5fYDYuojWhuz07tZM7qkIxxCZriy-fQiqxmwYPFm3Za82g-dU1T7B/pub?gid=103296320&single=true&output=csv';
+const IP2_RASHOD='https://docs.google.com/spreadsheets/d/e/2PACX-1vQuVvUEHyqdVP2ZHULOoeNyKdJrnI5qHcp8EI9uEns-xFfRaH_OifbV4yZEqeS_1a7CBVKMQ2TYi9pp/pub?gid=103296320&single=true&output=csv';
 const RASHOD_BY_NAME={'ИП1':IP1_RASHOD,'ИП2':IP2_RASHOD};
 const DEFAULT_IPS=[
   {name:'ИП1', arts:IP1_ARTS, econ:IP1_ECON, rashod:IP1_RASHOD, tax:6, vat:5},
@@ -424,12 +424,14 @@ function parseEcon(text){
   const iK=findCol(H,'предмет;артикул','артикул');
   const iSht=findCol(H,'расход-шт','расходшт');   /* расход на единицу (все категории) */
   const iTot=findCol(H,'расход');                 /* точное совпадение → колонка «Расход» (итого) */
+  const iPost=findCol(H,'поступ','поставл');      /* «шт поступило» — знаменатель себестоимости */
   const m=new Map();
   for(let r=1;r<rows.length;r++){
     const key=norm(rows[r][iK>=0?iK:0]); if(!key)continue;
     const sht=iSht>=0?numRu(rows[r][iSht]):0;
     const total=iTot>=0?numRu(rows[r][iTot]):0;
-    if(sht||total)m.set(key,{sht,total});
+    const post=iPost>=0?numRu(rows[r][iPost]):0;
+    if(sht||total||post)m.set(key,{sht,total,post});
   }
   return m;
 }
@@ -464,12 +466,13 @@ async function loadIp(ip){
   const arts=parseArts(aTxt);
   const econ=eTxt?parseEcon(eTxt):new Map();
   const rashod=rTxt?parseRashod(rTxt):new Map();
-  /* Себестоимость = товар на единицу = Σ(«Товар») ÷ шт, где шт = Расход ÷ Расход-ШТ (тот же базис, что в «Экон»). */
+  /* Историческая себестоимость = Σ расходов категории «Товар» (лист «расход») ÷ «шт поступило» (лист «Экон»). */
   arts.forEach(a=>{
     const key=norm((a.pred||'')+a.art);
     const e=econ.get(key), tovar=rashod.get(key)||0;
     a.cogsTovar=tovar;
-    a.cogs=(e&&e.total>0&&e.sht>0)?Math.round(tovar*e.sht/e.total):0;
+    a.postavleno=e?e.post:0;
+    a.cogs=(e&&e.post>0)?Math.round(tovar/e.post):0;
   });
   arts.sort((x,y)=>x.art.localeCompare(y.art,'ru'));
   return arts;
@@ -591,6 +594,20 @@ function calc(){
     +(commKnown(S)?'':' <span style="color:var(--amber)">(предмет не в таблице — дефолт)</span>')+` → реальная (−СПП ${fmt(S.spp)}%): <b>${pct(Math.max(0,commPct(S)-S.spp))}</b>. Налог ${S.ip}: <b>${fmt(C.tax)}%</b>${C.vat?' + НДС '+fmt(C.vat)+'%':''} — от цены на сайте.`;
   renderBreak(buildBreak(r,S), r, S);
   $('brkMode').textContent=S.ip+' · '+S.scheme+(S.scheme==='FBS'?' · сдача в '+S.hand:'');
+  updTips();
+}
+/* Подсказки при наведении: откуда взялась каждая цифра + авто/ручное */
+function updTips(){
+  const a=ARTS.find(x=>x.art===S.art)||{};
+  const man=id=>OVR[id]?' · ПРАВЛЕНО ВРУЧНУЮ (кнопка «↺ авто» вернёт подтянутое)':' · подтянуто автоматически';
+  const T=(id,txt)=>{const el=$(id); if(el) el.title=txt;};
+  const mm=n=>(n||n===0)?Math.round(n).toLocaleString('ru-RU'):'—';
+  T('i_cogs','СЕБЕСТОИМОСТЬ (товар), '+S.ip+': Σ расходов категории «Товар» из листа «расход» = '+mm(a.cogsTovar)+' ₽ ÷ «шт поступило» из «Экон» = '+mm(a.postavleno)+' шт = '+mm(a.cogs)+' ₽/ед. Только товар — логистика, реклама, выкуп и постоянные НЕ входят.'+man('i_cogs'));
+  T('i_vol','ОБЪЁМ, л — из листа «справочник» по этому артикулу.'+man('i_vol'));
+  T('i_price','ЦЕНА ПРОДАВЦА — '+(wbEnabled()?'из WB API «Цены и скидки» по nmID; если нет — ':'')+'из справочника («Розничная цена»). Можно править вручную.'+man('i_price'));
+  T('i_disc','СКИДКА ПРОДАВЦА — из WB API «Цены и скидки» по nmID (если включён тумблер и задан токен). Можно править вручную.'+man('i_disc'));
+  T('i_spp','СПП — вводится вручную (публичный card-API WB сейчас недоступен). Бери из кабинета WB или плагина.'+man('i_spp'));
+  T('i_buyM','ВЫКУП, % — из WB API «Статистика» за 60 дней по '+S.ip+' (нужен токен WB_STATS_'+(S.ip==='ИП2'?'IP2':'IP1')+' в воркере). Иначе вводится вручную.'+man('i_buyM'));
 }
 
 function buildBreak(r,S){
