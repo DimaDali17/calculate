@@ -37,6 +37,10 @@ body{font-family:'Comfortaa',sans-serif;background:var(--bg);color:var(--ink);fo
 .f input,.f select{padding:7px 9px;font-size:13px;background:var(--bg3);border:1px solid var(--border2);border-radius:7px;color:var(--ink);font-family:inherit;outline:0;width:100%}
 .f input:focus,.f select:focus{border-color:var(--ink)}
 .f input.auto{background:#F3EEE6;color:var(--ink2)}
+.f input.autofill{background:#F3EEE6}
+.f input.manual{background:var(--bg3);border-color:var(--amber)}
+.rev{display:none;border:0;background:var(--hl2);color:var(--amber);font-family:inherit;font-size:8px;font-weight:700;padding:1px 5px;border-radius:5px;cursor:pointer;vertical-align:middle;margin-left:4px;letter-spacing:.03em}
+.rev:hover{background:var(--amber);color:#fff}
 .sub{font-size:10px;color:var(--ink3);margin:2px 0 10px}
 .mg{display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin-bottom:12px}
 @media(max-width:920px){.mg{grid-template-columns:repeat(2,1fr)}}
@@ -178,14 +182,14 @@ table{width:100%;border-collapse:collapse}
         <div class="card">
           <div class="ct">Цена и товар</div>
           <div class="row">
-            <div class="f"><label>Цена продавца, ₽</label><input type="number" id="i_price" oninput="calc()"></div>
-            <div class="f"><label>Скидка продавца, %</label><input type="number" id="i_disc" oninput="calc()"></div>
-            <div class="f"><label>СПП, %</label><input type="number" id="i_spp" oninput="calc()"></div>
+            <div class="f"><label>Цена продавца, ₽ <button class="rev" id="rev_i_price" onclick="revAuto('i_price')" title="вернуть из WB">↺ авто</button></label><input type="number" id="i_price" oninput="markManual('i_price')"></div>
+            <div class="f"><label>Скидка продавца, % <button class="rev" id="rev_i_disc" onclick="revAuto('i_disc')" title="вернуть из WB">↺ авто</button></label><input type="number" id="i_disc" oninput="markManual('i_disc')"></div>
+            <div class="f"><label>СПП, % <button class="rev" id="rev_i_spp" onclick="revAuto('i_spp')" title="вернуть из WB">↺ авто</button></label><input type="number" id="i_spp" oninput="markManual('i_spp')"></div>
           </div>
           <div class="row">
-            <div class="f"><label>Себестоимость, ₽ <span style="color:var(--ink3)">(Расход-ШТ)</span></label><input type="number" id="i_cogs" class="auto" oninput="calc()"></div>
-            <div class="f"><label>Объём, л</label><input type="number" step="0.01" id="i_vol" class="auto" oninput="calc()"></div>
-            <div class="f"><label>Выкуп (ручной), %</label><input type="number" id="i_buyM" oninput="calc()"></div>
+            <div class="f"><label>Себестоимость, ₽ <span style="color:var(--ink3)">(товар)</span> <button class="rev" id="rev_i_cogs" onclick="revAuto('i_cogs')" title="вернуть из бухгалтерии">↺ авто</button></label><input type="number" id="i_cogs" class="autofill" oninput="markManual('i_cogs')"></div>
+            <div class="f"><label>Объём, л <button class="rev" id="rev_i_vol" onclick="revAuto('i_vol')" title="вернуть из справочника">↺ авто</button></label><input type="number" step="0.01" id="i_vol" class="autofill" oninput="markManual('i_vol')"></div>
+            <div class="f"><label>Выкуп, % <button class="rev" id="rev_i_buyM" onclick="revAuto('i_buyM')" title="вернуть из WB (60 дн.)">↺ авто</button></label><input type="number" id="i_buyM" oninput="markManual('i_buyM')"></div>
           </div>
           <div class="sub" id="buyoutNote"></div>
         </div>
@@ -294,7 +298,7 @@ table{width:100%;border-collapse:collapse}
     <p>Впиши адрес своего Cloudflare-воркера — через него идут и сохранение (воркер → Apps Script), и чтение CSV. Ключ — тот же, что в Apps Script. У каждого ИП свой налог.</p>
     <div class="fld"><label>Воркер URL (сохранение + прокси CSV)</label><input id="set_url" placeholder="https://calc.твой-домен.workers.dev"></div>
     <div class="fld"><label>Ключ доступа</label><input id="set_key" placeholder="общий пароль команды (как в Apps Script)"></div>
-    <div class="fld"><label style="display:flex;align-items:center;gap:8px;text-transform:none;font-weight:600"><input type="checkbox" id="set_wb" style="width:auto"> Тянуть цену и скидку из WB API (нужен токен «Цены и скидки» в worker.js)</label></div>
+    <div class="fld"><label style="display:flex;align-items:center;gap:8px;text-transform:none;font-weight:600"><input type="checkbox" id="set_wb" style="width:auto"> Тянуть из WB API: цену и скидку («Цены и скидки»), выкуп за 60 дн. («Статистика»), СПП (публичный card-API). Любое значение можно поправить вручную.</label></div>
     <div id="ipEditor"></div>
     <div class="rr"><button class="b" onclick="testConn()">Тест записи</button><button class="b" onclick="closeSettings()">Отмена</button><button class="b pri" onclick="saveSettings()">Сохранить и загрузить</button></div>
   </div>
@@ -311,9 +315,12 @@ const IP1_ARTS='https://docs.google.com/spreadsheets/d/e/2PACX-1vRv2VuvAbmweu5Q_
 const IP2_ARTS='https://docs.google.com/spreadsheets/d/e/2PACX-1vS4upRNoJpKgaEClkUgzfEBePMDEIYNBNHGO-iV5wqa0lzZPh1wLKuRw-fC2XDyc-kixxFbq4nPbKh9/pub?gid=612792464&single=true&output=csv';
 const IP1_ECON='https://docs.google.com/spreadsheets/d/e/2PACX-1vRd-F9AS2AOqG3-_39PX6jHwU-5fYDYuojWhuz07tZM7qkIxxCZriy-fQiqxmwYPFm3Za82g-dU1T7B/pub?gid=1189729527&single=true&output=csv';
 const IP2_ECON='https://docs.google.com/spreadsheets/d/e/2PACX-1vQuVvUEHyqdVP2ZHULOoeNyKdJrnI5qHcp8EI9uEns-xFfRaH_OifbV4yZEqeS_1a7CBVKMQ2TYi9pp/pub?gid=1189729527&single=true&output=csv';
+const IP1_RASHOD='https://docs.google.com/spreadsheets/d/1rGjangN77xW_BTrY3GOUsc91xd0FghgE6fRzt4V__bc/gviz/tq?tqx=out:csv&sheet=расход';
+const IP2_RASHOD='https://docs.google.com/spreadsheets/d/1QQSX8HdH2XcR3KN7isKgZp81fvEDFq4idVH-4K-kD7U/gviz/tq?tqx=out:csv&sheet=расход';
+const RASHOD_BY_NAME={'ИП1':IP1_RASHOD,'ИП2':IP2_RASHOD};
 const DEFAULT_IPS=[
-  {name:'ИП1', arts:IP1_ARTS, econ:IP1_ECON, tax:6, vat:5},
-  {name:'ИП2', arts:IP2_ARTS, econ:IP2_ECON, tax:6, vat:0}
+  {name:'ИП1', arts:IP1_ARTS, econ:IP1_ECON, rashod:IP1_RASHOD, tax:6, vat:5},
+  {name:'ИП2', arts:IP2_ARTS, econ:IP2_ECON, rashod:IP2_RASHOD, tax:6, vat:0}
 ];
 
 const DEFAULT_CONST={
@@ -342,6 +349,28 @@ const DEMO_ARTS=[{art:'Pantal.SK.bejnew.02',pred:'Трусы',vol:0.47,cogs:214}
 let CFG={url:'',key:'',wbApi:false,ips:DEFAULT_IPS.map(x=>({...x}))};
 let C={...DEFAULT_CONST}, COMM=DEFAULT_COMM.map(x=>({...x}));
 let ARTS=[], S={...DEFAULT_STATE}, REG=[], ONLINE=false, curTab='calc';
+
+/* ═══════ АВТО / РУЧНАЯ ПРАВКА ПОЛЕЙ ═══════
+   Поля подтягиваются (авто), но любое можно поправить руками — правка держится и НЕ затирается
+   при автоподстановке/обновлении того же артикула. Кнопка «↺ авто» возвращает подтянутое. */
+const AUTOFIELDS=['i_price','i_disc','i_spp','i_cogs','i_vol','i_buyM'];
+let AUTO={}, OVR={};
+function setAuto(id,val){
+  if(val===''||val==null||(typeof val==='number'&&!isFinite(val)))return;
+  AUTO[id]=val; const el=$(id); if(!el)return;
+  if(!OVR[id]){ el.value=val; el.classList.add('autofill'); el.classList.remove('manual'); }
+  updRev(id);
+}
+function markManual(id){
+  if(AUTOFIELDS.includes(id)){ OVR[id]=true; const el=$(id); if(el){el.classList.add('manual');el.classList.remove('autofill');} updRev(id); }
+  calc();
+}
+function revAuto(id){
+  OVR[id]=false; const el=$(id); if(el&&AUTO[id]!=null){el.value=AUTO[id];el.classList.add('autofill');el.classList.remove('manual');}
+  updRev(id); calc();
+}
+function updRev(id){ const b=$('rev_'+id); if(b)b.style.display=(OVR[id]&&AUTO[id]!=null)?'inline-block':'none'; }
+function resetOvr(){ OVR={}; AUTOFIELDS.forEach(updRev); }
 
 /* ═══════ УТИЛИТЫ ═══════ */
 const $=id=>document.getElementById(id);
@@ -388,17 +417,35 @@ function parseArts(text){
   }
   return [...map.values()];
 }
-/* Экон: ключ «Предмет+Артикул» (склейка) → «Расход-ШТ» = себестоимость */
+/* Экон: ключ «Предмет+Артикул» → {sht:Расход-ШТ, total:Расход}. Оба нужны, чтобы получить шт=Расход/Расход-ШТ. */
 function parseEcon(text){
   const rows=parseCSV(text); if(rows.length<2)return new Map();
   const H=rows[0].map(x=>String(x).trim().toLowerCase());
-  const iK=findCol(H,'предмет;артикул','артикул');      /* склеенный ключ в 1-й колонке */
-  const iC=findCol(H,'расход-шт','расход-шт ','расходшт');
+  const iK=findCol(H,'предмет;артикул','артикул');
+  const iSht=findCol(H,'расход-шт','расходшт');   /* расход на единицу (все категории) */
+  const iTot=findCol(H,'расход');                 /* точное совпадение → колонка «Расход» (итого) */
   const m=new Map();
   for(let r=1;r<rows.length;r++){
     const key=norm(rows[r][iK>=0?iK:0]); if(!key)continue;
-    const cogs=iC>=0?numRu(rows[r][iC]):0;
-    if(cogs>0)m.set(key,cogs);
+    const sht=iSht>=0?numRu(rows[r][iSht]):0;
+    const total=iTot>=0?numRu(rows[r][iTot]):0;
+    if(sht||total)m.set(key,{sht,total});
+  }
+  return m;
+}
+/* Расход (бухгалтерия): Σ «Сумма» только по строкам, где «Что» = «Товар». Ключ «Предмет;Артикул». */
+function parseRashod(text){
+  const rows=parseCSV(text); if(rows.length<2)return new Map();
+  const H=rows[0].map(x=>String(x).trim().toLowerCase());
+  let iK=findCol(H,'предмет;артикул'); if(iK<0)iK=H.findIndex(h=>h.includes(';')); if(iK<0)iK=3;
+  const iWhat=findCol(H,'что');
+  const iSum=findCol(H,'сумма');
+  const m=new Map();
+  if(iWhat<0||iSum<0)return m;
+  for(let r=1;r<rows.length;r++){
+    if(norm(rows[r][iWhat])!=='товар')continue;   /* только категория «Товар» */
+    const key=norm(rows[r][iK>=0?iK:3]); if(!key)continue;
+    m.set(key,(m.get(key)||0)+numRu(rows[r][iSum]));
   }
   return m;
 }
@@ -408,10 +455,22 @@ async function fetchText(url){
   const r=await fetch(src);if(!r.ok)throw new Error('HTTP '+r.status);return r.text();
 }
 async function loadIp(ip){
-  const [aTxt,eTxt]=await Promise.all([fetchText(ip.arts),ip.econ?fetchText(ip.econ):Promise.resolve('')]);
+  const rUrl=ip.rashod||RASHOD_BY_NAME[ip.name]||'';
+  const [aTxt,eTxt,rTxt]=await Promise.all([
+    fetchText(ip.arts),
+    ip.econ?fetchText(ip.econ):Promise.resolve(''),
+    rUrl?fetchText(rUrl).catch(()=>''):Promise.resolve('')
+  ]);
   const arts=parseArts(aTxt);
   const econ=eTxt?parseEcon(eTxt):new Map();
-  arts.forEach(a=>{a.cogs=econ.get(norm((a.pred||'')+a.art))||0;});
+  const rashod=rTxt?parseRashod(rTxt):new Map();
+  /* Себестоимость = товар на единицу = Σ(«Товар») ÷ шт, где шт = Расход ÷ Расход-ШТ (тот же базис, что в «Экон»). */
+  arts.forEach(a=>{
+    const key=norm((a.pred||'')+a.art);
+    const e=econ.get(key), tovar=rashod.get(key)||0;
+    a.cogsTovar=tovar;
+    a.cogs=(e&&e.total>0&&e.sht>0)?Math.round(tovar*e.sht/e.total):0;
+  });
   arts.sort((x,y)=>x.art.localeCompare(y.art,'ru'));
   return arts;
 }
@@ -420,19 +479,40 @@ function currentIp(){return CFG.ips.find(x=>x.name===S.ip)||CFG.ips[0];}
 /* ═══════ WB API (цены/скидки) через воркер ═══════ */
 function wbEnabled(){return !!(CFG.url&&CFG.wbApi);}
 async function wbFetchPrice(a){
-  if(!a||!a.nmid)return;
+  if(!a||!a.nmid||!CFG.url)return;
   try{
     const r=await fetch(CFG.url+(CFG.url.includes('?')?'&':'?')+'wbprice='+encodeURIComponent(a.nmid));
-    const t=await r.text(); const j=parseJSON(t);
+    const j=parseJSON(await r.text());
     const g=j&&j.data&&j.data.listGoods&&j.data.listGoods[0];
     if(g){
       const price=(g.sizes&&g.sizes[0]&&(g.sizes[0].price))||g.price||0;
       const disc=g.discount!=null?g.discount:0;
-      if(price>0)$('i_price').value=price;
-      if(disc>=0)$('i_disc').value=disc;
+      if(price>0)setAuto('i_price',price);
+      if(disc>=0)setAuto('i_disc',disc);
       calc();
     }
-  }catch(e){ toast('WB API: '+e.message,'err'); }
+  }catch(e){}
+}
+/* СПП: воркер отдаёт {spp} или {basic,product} из публичного card-API → spp=1−product/basic. Заготовка, правится. */
+async function wbFetchSpp(a){
+  if(!a||!a.nmid||!CFG.url)return;
+  try{
+    const j=parseJSON(await (await fetch(CFG.url+(CFG.url.includes('?')?'&':'?')+'wbspp='+encodeURIComponent(a.nmid))).text());
+    let spp=(j&&j.spp!=null)?j.spp:null;
+    if(spp==null&&j&&j.basic>0&&j.product>0)spp=Math.round((1-j.product/j.basic)*1000)/10;
+    if(spp!=null&&isFinite(spp)&&spp>=0)setAuto('i_spp',spp);
+    calc();
+  }catch(e){}
+}
+/* Выкупаемость: воркер считает по API «Статистика» за 60 дней → {buyout} в %. Заготовка, правится. */
+async function wbFetchBuyout(a){
+  if(!a||!a.nmid||!CFG.url)return;
+  try{
+    const j=parseJSON(await (await fetch(CFG.url+(CFG.url.includes('?')?'&':'?')+'wbbuyout='+encodeURIComponent(a.nmid))).text());
+    const b=(j&&j.buyout!=null)?j.buyout:((j&&j.percent!=null)?j.percent:null);
+    if(b!=null&&isFinite(b)&&b>=0)setAuto('i_buyM',Math.round(b*10)/10);
+    calc();
+  }catch(e){}
 }
 
 /* ═══════ РАСЧЁТ ═══════ */
@@ -564,7 +644,7 @@ function buildBreak(r,S){
     ...prepRows,
     ...ffRows,
     ['h','Прочие расходы','',''],
-    ['','Себестоимость (Расход-ШТ)',neg(S.cogs),'Из листа «Экон», колонка Расход-ШТ.'],
+    ['','Себестоимость (товар)',neg(S.cogs),'Только категория «Товар» из листа «расход», на единицу (шт из «Экон»). Логистика, реклама, выкуп и постоянные сюда НЕ входят — считаются отдельно ниже.'],
     ...(r.store>0?[['','Хранение ('+fmt(C.store_days)+' дн.)',neg(r.store),fmt(C.store_per_l)+' ₽/л × '+fmt(r.storeLiters)+' л (объём '+fmt(S.vol)+' л, мин. 1 л) × коэф. склада '+fmt(r.L.p.coef)+' × '+fmt(C.store_days)+' дн.']]:[]),
     ['','Постоянные',neg(C.fixed),'Все постоянные затраты ÷ число реализованных штук (константа).'],
     ['','Налог '+fmt(C.tax)+'% (от цены на сайте)',neg(r.tax),'Цена на сайте × '+fmt(C.tax)+'% (налог '+S.ip+').'],
@@ -689,9 +769,15 @@ function fillPredList(){
 function onPred(){ S.pred=$('i_pred').value; fillArtList(); calc(); }
 function pickArt(){
   const a=ARTS.find(x=>x.art===$('i_art').value);
-  if(a){S.art=a.art; if(a.vol)$('i_vol').value=a.vol; $('i_cogs').value=a.cogs||0; if(a.pred){$('i_pred').value=a.pred;fillArtList();}
-    if(a.price>0)$('i_price').value=a.price;
-    if(wbEnabled())wbFetchPrice(a);}
+  if(a){
+    resetOvr();                                 /* новый артикул — тянем всё заново */
+    S.art=a.art;
+    if(a.pred){$('i_pred').value=a.pred;fillArtList();}
+    if(a.vol)setAuto('i_vol',a.vol);
+    setAuto('i_cogs',a.cogs||0);
+    if(a.price>0)setAuto('i_price',a.price);
+    if(wbEnabled()){wbFetchPrice(a);wbFetchSpp(a);wbFetchBuyout(a);}
+  }
   calc();
 }
 function setScheme(v){S.scheme=v;segSet('seg_scheme',v==='FBW'?0:1);$('fbsTimeWrap').style.display=v==='FBS'?'':'none';$('handWrap').style.display=v==='FBS'?'':'none';calc();}
@@ -703,7 +789,7 @@ async function switchIp(){
   $('saveStatus').textContent='Загрузка справочника '+S.ip+'…';
   try{ ARTS=await loadIp(ip); }catch(e){ toast('Ошибка загрузки '+S.ip+': '+e.message,'err'); }
   fillArtList();fillPredList();
-  const a=ARTS.find(x=>x.art===S.art); if(a){$('i_vol').value=a.vol||0;$('i_cogs').value=a.cogs||0;}
+  const a=ARTS.find(x=>x.art===S.art); if(a){setAuto('i_vol',a.vol||0);setAuto('i_cogs',a.cogs||0);}
   $('saveStatus').textContent='';
   calc();
 }
@@ -924,7 +1010,7 @@ async function boot(){
   $('placeholder').style.display='none';
   writeInputs();
   // автоподстановка объёма/себест из справочника если совпал артикул
-  const a=ARTS.find(x=>x.art===S.art); if(a){if(a.vol)$('i_vol').value=a.vol;if(a.cogs)$('i_cogs').value=a.cogs;}
+  const a=ARTS.find(x=>x.art===S.art); if(a){if(a.vol)setAuto('i_vol',a.vol);setAuto('i_cogs',a.cogs||0);}
   calc();
 }
 function showBanner(msg){const b=$('banner');b.className='banner show';b.innerHTML='⚠ '+msg;}
@@ -957,7 +1043,7 @@ async function saveConst(){
 function reload(){$('placeholder').style.display='block';$('banner').className='banner';boot();}
 
 /* ═══════ НАСТРОЙКИ ═══════ */
-function loadCfg(){try{const c=JSON.parse(localStorage.getItem(LS_CFG)||'{}');CFG.url=c.url||'';CFG.key=c.key||'';CFG.wbApi=!!c.wbApi;CFG.ips=(c.ips&&c.ips.length)?c.ips:DEFAULT_IPS.map(x=>({...x}));}catch(e){}}
+function loadCfg(){try{const c=JSON.parse(localStorage.getItem(LS_CFG)||'{}');CFG.url=c.url||'';CFG.key=c.key||'';CFG.wbApi=!!c.wbApi;CFG.ips=(c.ips&&c.ips.length)?c.ips:DEFAULT_IPS.map(x=>({...x}));CFG.ips=CFG.ips.map(p=>({...p,rashod:p.rashod||RASHOD_BY_NAME[p.name]||''}));}catch(e){}}
 function openSettings(){
   $('set_url').value=CFG.url;$('set_key').value=CFG.key;$('set_wb').checked=CFG.wbApi;
   $('ipEditor').innerHTML=CFG.ips.map((p,i)=>`<div class="ipbox"><div class="ct2">ИП №${i+1}</div>
@@ -965,13 +1051,14 @@ function openSettings(){
       <div class="fld"><label>Налог, %</label><input id="ip_tax_${i}" value="${p.tax}"></div>
       <div class="fld"><label>НДС, %</label><input id="ip_vat_${i}" value="${p.vat}"></div></div>
     <div class="fld"><label>CSV справочника (Объём, л)</label><input id="ip_arts_${i}" value="${p.arts||''}"></div>
-    <div class="fld"><label>CSV «Экон» (Расход-ШТ)</label><input id="ip_econ_${i}" value="${p.econ||''}"></div></div>`).join('');
+    <div class="fld"><label>CSV «Экон» (Расход-ШТ)</label><input id="ip_econ_${i}" value="${p.econ||''}"></div>
+    <div class="fld"><label>CSV «расход» — gviz (себест. «товар»)</label><input id="ip_rashod_${i}" value="${p.rashod||''}"></div></div>`).join('');
   $('setOv').classList.add('show');
 }
 function closeSettings(){$('setOv').classList.remove('show');}
 function saveSettings(){
   CFG.url=$('set_url').value.trim();CFG.key=$('set_key').value.trim();CFG.wbApi=$('set_wb').checked;
-  CFG.ips=CFG.ips.map((p,i)=>({name:($('ip_name_'+i).value.trim()||('ИП'+(i+1))),tax:num($('ip_tax_'+i).value),vat:num($('ip_vat_'+i).value),arts:$('ip_arts_'+i).value.trim(),econ:$('ip_econ_'+i).value.trim()})).filter(p=>p.arts);
+  CFG.ips=CFG.ips.map((p,i)=>({name:($('ip_name_'+i).value.trim()||('ИП'+(i+1))),tax:num($('ip_tax_'+i).value),vat:num($('ip_vat_'+i).value),arts:$('ip_arts_'+i).value.trim(),econ:$('ip_econ_'+i).value.trim(),rashod:$('ip_rashod_'+i).value.trim()})).filter(p=>p.arts);
   try{localStorage.setItem(LS_CFG,JSON.stringify(CFG));}catch(e){}
   closeSettings();reload();
 }
