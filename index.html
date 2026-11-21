@@ -53,20 +53,21 @@ body{font-family:'Comfortaa',sans-serif;background:var(--bg);color:var(--ink);fo
 .md{font-size:10px;margin-top:5px;color:var(--ink3)}.md b{color:var(--ink2)}
 .mc.dark .md{color:var(--bg3);opacity:.7}.mc.dark .md b{color:var(--bg3)}
 table{width:100%;border-collapse:collapse}
-.brk td{padding:5px 4px;border-bottom:1px solid var(--border);font-size:12px;color:var(--ink)}
+.brk td{padding:1px 4px;border-bottom:1px solid var(--border);font-size:10.5px;line-height:1.15;color:var(--ink)}
 .brk td:first-child{color:var(--ink2)}
-.brk td:nth-child(3){text-align:right;font-variant-numeric:tabular-nums;font-weight:600;white-space:nowrap}
-.brk td.wcol{text-align:right;font-variant-numeric:tabular-nums;font-weight:400;white-space:nowrap;color:var(--ink3);opacity:.5;font-size:11px}
+.brk td:nth-child(3){text-align:right;font-variant-numeric:tabular-nums;font-weight:400;white-space:nowrap}
+.brk td.wcol{text-align:right;font-variant-numeric:tabular-nums;font-weight:400;white-space:nowrap;color:var(--ink3);opacity:.5;font-size:9.5px}
 .brk td.wcol:nth-child(2){border-right:1px solid var(--border)}
 .brk td.wcol:nth-child(4){border-left:1px solid var(--border)}
-.brk thead th{font-size:9px;text-transform:uppercase;letter-spacing:.06em;color:var(--ink3);font-weight:700;padding:3px 4px;text-align:right;border-bottom:1px solid var(--border2)}
+.brk thead th{font-size:8px;text-transform:uppercase;letter-spacing:.06em;color:var(--ink3);font-weight:700;padding:1px 4px;text-align:right;border-bottom:1px solid var(--border2)}
 .brk thead th:first-child{text-align:left}
 .brk thead th.wh{opacity:.6;font-weight:600}
 .brk tr.g td:first-child,.brk tr.g td:nth-child(3){color:var(--green)}
-.brk tr.h td{font-weight:700;background:var(--bg3);text-transform:uppercase;font-size:9px;letter-spacing:.08em;color:var(--ink3);border-bottom:1px solid var(--border2)}
-.brk tr.sub td{color:var(--ink3);font-size:11px;padding-top:2px;border-bottom:1px dashed var(--border)}
+.brk tr.h td{font-weight:700;background:var(--bg3);text-transform:uppercase;font-size:8px;letter-spacing:.08em;color:var(--ink3);border-bottom:1px solid var(--border2);padding:1px 4px}
+.brk tr.sub td{color:var(--ink3);font-size:9px;padding-top:0;line-height:1.1;border-bottom:1px dashed var(--border)}
 .brk tr.sub td:first-child{padding-left:14px}
 .brk tr.tot td{font-weight:700;background:var(--bg2);border-top:1px solid var(--border2)}
+.brk-card{padding:9px 12px}.brk-card .ct{margin-bottom:5px;font-size:10px}
 .brk td .neg{color:var(--red)}
 .ktbl{width:100%;border-collapse:collapse;font-size:12px}
 .ktbl th{text-align:left;padding:6px 8px;font-size:9px;font-weight:700;color:var(--ink3);background:var(--bg3);text-transform:uppercase;letter-spacing:.03em;border-bottom:1px solid var(--border)}
@@ -211,10 +212,9 @@ table{width:100%;border-collapse:collapse}
       </div>
 
       <div>
-        <div class="card">
+        <div class="card brk-card">
           <div class="ct">Экономика по шагам <span id="brkMode" style="font-size:9px;color:var(--ink3)"></span></div>
           <table class="brk"><thead><tr><th></th><th class="wh">скидка +5%</th><th>значение</th><th class="wh">скидка −5%</th></tr></thead><tbody id="brk"></tbody></table>
-          <div class="sub" style="margin-top:6px">Наведи курсор на строку — покажет формулу. Бледные колонки по бокам показывают тот же расчёт, если скидку продавца поднять на 5 п.п. (слева) или снизить на 5 п.п. (справа); цифры округлены до целых — быстро видно чувствительность к цене.</div>
         </div>
       </div>
     </div>
