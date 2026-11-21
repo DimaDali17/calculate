@@ -42,13 +42,13 @@ body{font-family:'Comfortaa',sans-serif;background:var(--bg);color:var(--ink);fo
 .rev{display:none;border:0;background:var(--hl2);color:var(--amber);font-family:inherit;font-size:8px;font-weight:700;padding:1px 5px;border-radius:5px;cursor:pointer;vertical-align:middle;margin-left:4px;letter-spacing:.03em}
 .rev:hover{background:var(--amber);color:#fff}
 .sub{font-size:10px;color:var(--ink3);margin:2px 0 10px}
-.mg{display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin-bottom:12px}
+.mg{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:12px}
 @media(max-width:920px){.mg{grid-template-columns:repeat(2,1fr)}}
-.mc{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px 14px;min-width:0}
+.mc{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:10px 12px;min-width:0}
 .mc.dark{background:var(--ink);border-color:var(--ink)}
 .ml{font-size:9px;color:var(--ink3);text-transform:uppercase;letter-spacing:.1em;font-weight:700;margin-bottom:6px}
 .mc.dark .ml{color:var(--bg3);opacity:.6}
-.mv{font-size:22px;font-weight:700;line-height:1;white-space:nowrap}.mv.g{color:var(--green)}.mv.r{color:var(--red)}.mv.a{color:var(--amber)}.mv.b{color:var(--blue)}
+.mv{font-size:19px;font-weight:700;line-height:1;white-space:nowrap}.mv.g{color:var(--green)}.mv.r{color:var(--red)}.mv.a{color:var(--amber)}.mv.b{color:var(--blue)}
 .mc.dark .mv{color:var(--bg3)}
 .md{font-size:10px;margin-top:5px;color:var(--ink3)}.md b{color:var(--ink2)}
 .mc.dark .md{color:var(--bg3);opacity:.7}.mc.dark .md b{color:var(--bg3)}
@@ -134,16 +134,16 @@ table{width:100%;border-collapse:collapse}
 
   <!-- ═══════ КАЛЬКУЛЯТОР ═══════ -->
   <div id="page-calc">
-    <div class="mg">
-      <div class="mc dark"><div class="ml">Маржинальность</div><div class="mv" id="m_marzha">—</div><div class="md" id="m_marzha_d"></div></div>
-      <div class="mc"><div class="ml">Прибыль с продажи</div><div class="mv" id="m_profit">—</div><div class="md">₽ / шт</div></div>
-      <div class="mc"><div class="ml">Прибыль до рекл.</div><div class="mv" id="m_profit0">—</div><div class="md">₽ / шт</div></div>
-      <div class="mc"><div class="ml">ДРР</div><div class="mv b" id="m_drr">—</div><div class="md">доля рекламы</div></div>
-      <div class="mc"><div class="ml">Логистика с выкупом</div><div class="mv" id="m_log">—</div><div class="md" id="m_log_d">₽ / шт</div></div>
-      <div class="mc"><div class="ml">Цена на сайте</div><div class="mv" id="m_site">—</div><div class="md">с учётом СПП</div></div>
-    </div>
     <div class="grid2">
       <div>
+        <div class="mg">
+          <div class="mc dark"><div class="ml">Маржинальность</div><div class="mv" id="m_marzha">—</div><div class="md" id="m_marzha_d"></div></div>
+          <div class="mc"><div class="ml">Прибыль с продажи</div><div class="mv" id="m_profit">—</div><div class="md">₽ / шт</div></div>
+          <div class="mc"><div class="ml">Прибыль до рекл.</div><div class="mv" id="m_profit0">—</div><div class="md">₽ / шт</div></div>
+          <div class="mc"><div class="ml">ДРР</div><div class="mv b" id="m_drr">—</div><div class="md">доля рекламы</div></div>
+          <div class="mc"><div class="ml">Логистика с выкупом</div><div class="mv" id="m_log">—</div><div class="md" id="m_log_d">₽ / шт</div></div>
+          <div class="mc"><div class="ml">Цена на сайте</div><div class="mv" id="m_site">—</div><div class="md">с учётом СПП</div></div>
+        </div>
         <div class="card">
           <div class="ct">Товар и режим</div>
           <div class="row">
